@@ -10,17 +10,13 @@ s.connect(ADDR)
 
 list=["Shi Tang","look mirror","get hairpin","unlock door with hairpin","open door"]
 
-while True:
+for i in range (4):
     aa=s.recv(1024)
-    if not aa:
-        break
-    else:
-        b=aa.decode()
-        print(b)
-        i=0
-        n=list[i].encode()
-        s.send(n)
-        i=i+1
+    b=aa.decode()
+    print(b)
+    n=list[i].encode()
+    s.send(n)
+    i=i+1
 
 s.close()
 
