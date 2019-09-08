@@ -1,4 +1,4 @@
-from socket import *
+import socket
 
 HOST='192.168.200.52'
 PORT=19001
@@ -20,7 +20,7 @@ s.connect(ADDR)
         break
     print(date)"""
 
-list=["Shi Tang","look mirror","get hairpin","unlock door with hairpin","open door"]
+list=[("Shi Tang", "Stang47@jhu.edu", "TsGanT", "IronHead"),"look mirror","get hairpin","unlock door with hairpin","open door"]
 
 while True:
     aa=s.recv(1024)
