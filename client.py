@@ -1,4 +1,4 @@
-from socket import *
+import socket
 
 HOST='192.168.200.52'
 PORT=19001
