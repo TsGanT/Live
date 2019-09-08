@@ -8,12 +8,6 @@ s=socket.socket()
 """CliSock=socket(AF_INET, SOCK_STREAM)"""
 s.connect(ADDR)
 
-"""print("Hi my dear worrior, welcome to this game. You are now been bangjia in the room")
-print("In this game you can only input the name of items and")
-print("input the behaviour like look, use and get")
-print("You have to escape from the room in 10mins or you will die.")
-print("I wish you have a good luck!")
-print("please enter s to star the game!")"""
 """while True:
     data=input(">>")
     date=str.encode(data)
