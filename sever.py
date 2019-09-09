@@ -309,7 +309,7 @@ def main(args):
         for i in commond:
             if i !="":
                 output = game.command(i)
-        if game.status="escaped":
+        if game.status == "escaped":
             print("Ojbk")
         #command = input(">> ")
         s.close()
