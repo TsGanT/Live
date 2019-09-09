@@ -281,7 +281,7 @@ class EscapeRoomGame:
         
 def main(args):
     game = EscapeRoomGame()
-    game.output=s.send(str.encode())
+    game.output=s.send(output.encode())
     game.create_game(cheat=("--cheat" in args))
     game.start()
     while game.status == "playing":
