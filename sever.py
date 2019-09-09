@@ -9,9 +9,7 @@ HOST='192.168.200.52'
 PORT=19002
 BUFSIZE=1024
 ADDR=(HOST, PORT)
-s=socket.socket()
-"""CliSock=socket(AF_INET, SOCK_STREAM)"""
-s.connect(ADDR)
+
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -280,15 +278,40 @@ class EscapeRoomGame:
                 self.status = "escaped"
         
 def main(args):
+    s=socket.socket()
+    s.connect(ADDR)
+    list=["Shi Tang","look mirror","get hairpin","unlock door with hairpin","open door"]
+    for i in range(len (list)):
+        print(i)
+        aa=s.recv(1024)
+        b=aa.decode()
+        print(b)
+        n=list[i].encode()
+        s.send(n)
+        time.sleep(0.25)
+        i=i+1
+    suc_res = s.recv(1024)
+    print(suc_res.decode())
+
+    def gs_message(result):
+        result=result + "<EOL>\n"
+        print(result)
+        s.send(result.encode('utf-8'))
+
+
     game = EscapeRoomGame()
-    game.output=s.send(output.encode())
+    game.output=gs_message
     game.create_game(cheat=("--cheat" in args))
     game.start()
     while game.status == "playing":
         aa=s.recv(1024)
         commond=aa.decode().split("<EOL>\n")
+        for i in commond:
+            if i !="":
+                output = game.command(i)
+        if game.status="escaped":
+            print("Ojbk")
         #command = input(">> ")
-        output = game.command(command)
-
+        s.close()
 if __name__=="__main__":
     main(sys.argv[1:])
