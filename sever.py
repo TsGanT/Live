@@ -2,6 +2,16 @@
 Escape Room Core
 """
 import random, sys
+import socket
+import time
+
+HOST='192.168.200.52'
+PORT=19002
+BUFSIZE=1024
+ADDR=(HOST, PORT)
+s=socket.socket()
+"""CliSock=socket(AF_INET, SOCK_STREAM)"""
+s.connect(ADDR)
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -55,7 +65,7 @@ class EscapeRoomCommandHandler:
         else:
             self._run_triggers(object, "look")
             look_result = object.attributes.get("description","You see nothing special")
-        self.output(look_result)
+        self.output(look_result)   #一个输出
         
     def _cmd_unlock(self, unlock_args):
         unlock_result = None
@@ -92,7 +102,7 @@ class EscapeRoomCommandHandler:
                 unlock_result = "You hear a click! It worked!"
                 object["locked"] = False
                 self._run_triggers(object, "unlock", unlocker)
-        self.output(unlock_result)
+        self.output(unlock_result)                 #也是一个输出
         
     def _cmd_open(self, open_args):
         """
@@ -112,7 +122,7 @@ class EscapeRoomCommandHandler:
         if open_result == success_result:
             object["open"] = True
             self._run_triggers(object, "open")
-        self.output(open_result)
+        self.output(open_result)            #也是一个输出
 
     def _cmd_get(self, get_args):
         if len(get_args) == 0:
@@ -138,7 +148,7 @@ class EscapeRoomCommandHandler:
                 container["container"].__delitem__(object.name)
                 self.player["container"][object.name] = object
                 self._run_triggers(object, "get",container)
-        self.output(get_result)
+        self.output(get_result)  #输出
         
     def _cmd_inventory(self, inventory_args):
         """
@@ -190,7 +200,7 @@ def create_mirror_description(mirror, room):
     return description
     
 def create_chest_description(chest):
-    description = "An old chest. It looks worn, but it's still sturdy."
+    description = "An old chest. It looks worn, but it's still sturdy."      #description是要发出去的
     if chest["locked"]:
         description += " And it appears to be locked."
     elif chest["open"]:
@@ -271,11 +281,14 @@ class EscapeRoomGame:
         
 def main(args):
     game = EscapeRoomGame()
+    game.output=s.send(str.encode())
     game.create_game(cheat=("--cheat" in args))
     game.start()
     while game.status == "playing":
-        command = input(">> ")
+        aa=s.recv(1024)
+        commond=aa.decode().split("<EOL>\n")
+        #command = input(">> ")
         output = game.command(command)
-        
+
 if __name__=="__main__":
     main(sys.argv[1:])
