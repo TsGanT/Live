@@ -317,7 +317,7 @@ class EchoServerClientProtocol(asyncio.Protocol):
 
 def main(args):
     loop = asyncio.get_event_loop()
-    coro = loop.create_server(EchoServerClientProtocol,'192.168.200.116', 2074)  #这个EchoServerClientProtocol为啥一定要张这个样子
+    coro = loop.create_server(EchoServerClientProtocol,'', 2001)  #这个EchoServerClientProtocol为啥一定要张这个样子
     server = loop.run_until_complete(coro)
 
     try:

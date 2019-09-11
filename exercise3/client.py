@@ -39,7 +39,7 @@ class EchoClient(asyncio.Protocol):
         result = data.decode()
         flag = result.split(" ")
         if flag[0] == "OK":
-            list=["OK,Shi Tang,stang47@jhu.edu,team 4,7074", "look mirror","get hairpin", 
+            list=["OK,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
                     "look chest", "unlock chest with hairpin", "open chest", "get hammer in chest",
                     "unlock door with hairpin", "open door"]
             for i in list:
@@ -63,7 +63,7 @@ class EchoClient(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = loop.create_connection(EchoClient,'192.168.200.52', 2074)
+	coro = loop.create_connection(EchoClient,'192.168.200.52', 19003)
 	client = loop.run_until_complete(coro)
 
 	try:
