@@ -61,7 +61,7 @@ class EscapeRoomCommandHandler:
                 look_result = "You can't do that! It's closed!"
             else:
                 #a="hammer"
-                self._run_triggers(object, "look in")
+                self._run_triggers(object, "open")
                 look_result = "Inside the {} you see: {}".format(object.name, listFormat(object["container"].values()))
                 #look_result = "Inside the {} you see: {}".format(object.name, a)
         else:
@@ -255,7 +255,7 @@ class EscapeRoomGame:
         mirror.triggers.append(lambda obj, cmd, *args: (cmd == "look") and hairpin.__setitem__("visible",True))
         mirror.triggers.append(lambda obj, cmd, *args: (cmd == "look") and mirror.__setitem__("description", create_mirror_description(mirror, room)))     
         chest.triggers.append(lambda obj, cmd, *args: (cmd == "open") and chest.__setitem__("description", create_chest_description(chest,room)))
-        chest.triggers.append(lambda obj, cmd, *args: (cmd == "look in") and hammer.__setitem__("visible",True))
+        chest.triggers.append(lambda obj, cmd, *args: (cmd == "open") and hammer.__setitem__("visible",True))
         #chest.triggers.append(lambda obj, cmd, *args: (cmd == "look") and chest.__setitem__("description", create_chest_description(chest, room)))  
         #door.triggers.append(lambda obj, cmd, *args: (cmd == "unlock") and door.__setitem__("description", create_door_description(door)))       
         door.triggers.append(lambda obj, cmd, *args: (cmd == "open") and room["container"].__delitem__(player.name))
