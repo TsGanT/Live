@@ -71,6 +71,5 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		pass
 
-	client.close()
 	loop.run_until_complete(client.close())
 	loop.close()
