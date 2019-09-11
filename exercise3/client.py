@@ -35,14 +35,19 @@ class EchoClient(asyncio.Protocol):
         self.transport=transport
 
     def data_received(self, data):
-
         print(data.decode())
-
-        list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,7074", "get hairpin", "look chest", "unlock chest with hairpin", "open chest", "get hammer","unlock door with hairpin","open door"]
-        for i in list:
-            print(i)
-            commond=self.send_message(i)
-            self.transport.write(commond.encode())
+        result = data.decode()
+        flag = result.split(" ")
+        if flag[0] == "SUBMIT"：
+            list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,7074", "look mirror","get hairpin", 
+                    "look chest", "unlock chest with hairpin", "open chest", "get hammer in chest",
+                    "unlock door with hairpin", "open door"]
+            for i in list:
+                print(i)
+                commond=self.send_message(i)
+                self.transport.write(commond.encode())
+            
+            
 
     def send_message(self, message):
         command = message + "<EOL>\n"
