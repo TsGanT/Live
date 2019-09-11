@@ -2,13 +2,14 @@
 Escape Room Core
 """
 import random, sys
-import socket
+import asyncio
 import time
 
-HOST='192.168.200.52'
-PORT=19002
+#HOST='192.168.200.52'
+"""HOST="localhost"
+PORT=21567
 BUFSIZE=1024
-ADDR=(HOST, PORT)
+ADDR=(HOST, PORT)"""
 
 
 def create_container_contents(*escape_room_objects):
@@ -33,7 +34,7 @@ class EscapeRoomObject:
     def __setitem__(self, object_attribute, value):
         self.attributes[object_attribute] = value
         
-    def __repr__(self):
+    def __repr__(self):     #self说白起来是一种方法？
         return self.name
         
 class EscapeRoomCommandHandler:
@@ -59,7 +60,10 @@ class EscapeRoomCommandHandler:
             if not object["open"]:
                 look_result = "You can't do that! It's closed!"
             else:
+                #a="hammer"
+                self._run_triggers(object, "look in")
                 look_result = "Inside the {} you see: {}".format(object.name, listFormat(object["container"].values()))
+                #look_result = "Inside the {} you see: {}".format(object.name, a)
         else:
             self._run_triggers(object, "look")
             look_result = object.attributes.get("description","You see nothing special")
@@ -119,6 +123,7 @@ class EscapeRoomCommandHandler:
                                                        success_result)
         if open_result == success_result:
             object["open"] = True
+            print(object.name)
             self._run_triggers(object, "open")
         self.output(open_result)            #也是一个输出
 
@@ -136,8 +141,8 @@ class EscapeRoomCommandHandler:
             
             success_result = "You got it"
             get_result = (
-                ((not container or container["container"] == False)and "You can't get something out of that!") or
-                ((container["openable"] and not container["open"]) and "It's not open.") or
+                ((not container or container["container"] == False)and "You can't get. something out of that!") or
+                ((container["openable"] and not container["open"]) and "It's not open") or
                 ((not object or not object["visible"])             and "You don't see that") or
                 ((not object["gettable"])                          and "You can't get that.") or
                                                                    success_result)
@@ -184,6 +189,7 @@ def create_room_description(room):
     return """You are in a locked room. There is only one door
 and it is locked. Above the door is a clock that reads {clock_time}.
 Across from the door is a large {mirror}. Below the mirror is an old chest.
+
 The room is old and musty and the floor is creaky and warped.""".format(**room_data)
 
 def create_door_description(door):
@@ -197,12 +203,13 @@ def create_mirror_description(mirror, room):
         description += ".. wait, there's a hairpin in your hair. Where did that come from?"
     return description
     
-def create_chest_description(chest):
+
+def create_chest_description(chest,room):
     description = "An old chest. It looks worn, but it's still sturdy."      #description是要发出去的
-    if chest["locked"]:
+    if chest["locked"]: 
         description += " And it appears to be locked."
     elif chest["open"]:
-        description += " The chest is open."
+        description += " The chest is open. "
     return description
     
 def advance_time(room, clock):
@@ -230,23 +237,27 @@ class EscapeRoomGame:
         hairpin= EscapeRoomObject("hairpin",visible=False, gettable=True)
         door  =  EscapeRoomObject("door",   visible=True, openable=True, open=False, keyed=True, locked=True, unlockers=[hairpin])
         chest  = EscapeRoomObject("chest",  visible=True, openable=True, open=False, keyed=True, locked=True, unlockers=[hairpin])
+        hammer = EscapeRoomObject("hammer", visible=False, gettable= True)
         room   = EscapeRoomObject("room",   visible=True)
         player = EscapeRoomObject("player", visible=False, alive=True)
         
         # setup containers
         player["container"]= {}
-        chest["container"] = {}
+        chest["container"] = create_container_contents(hammer)
         room["container"]  = create_container_contents(player, door, clock, mirror, hairpin, chest)
         
         # set initial descriptions (functions)
         room["description"]    = create_room_description(room)
         door["description"]    = create_door_description(door)
         mirror["description"]  = create_mirror_description(mirror, room)
-        chest["description"]   = create_chest_description(chest)
+        chest["description"]   = create_chest_description(chest,room)
 
         mirror.triggers.append(lambda obj, cmd, *args: (cmd == "look") and hairpin.__setitem__("visible",True))
-        mirror.triggers.append(lambda obj, cmd, *args: (cmd == "look") and mirror.__setitem__("description", create_mirror_description(mirror, room)))
-        door.triggers.append(lambda obj, cmd, *args: (cmd == "unlock") and door.__setitem__("description", create_door_description(door)))
+        mirror.triggers.append(lambda obj, cmd, *args: (cmd == "look") and mirror.__setitem__("description", create_mirror_description(mirror, room)))     
+        chest.triggers.append(lambda obj, cmd, *args: (cmd == "open") and chest.__setitem__("description", create_chest_description(chest,room)))
+        chest.triggers.append(lambda obj, cmd, *args: (cmd == "look in") and hammer.__setitem__("visible",True))
+        #chest.triggers.append(lambda obj, cmd, *args: (cmd == "look") and chest.__setitem__("description", create_chest_description(chest, room)))  
+        #door.triggers.append(lambda obj, cmd, *args: (cmd == "unlock") and door.__setitem__("description", create_door_description(door)))       
         door.triggers.append(lambda obj, cmd, *args: (cmd == "open") and room["container"].__delitem__(player.name))
         room.triggers.append(lambda obj, cmd, *args: (cmd == "_post_command_") and advance_time(room, clock))
         # TODO, the chest needs some triggers. This is for a later exercise
@@ -276,42 +287,59 @@ class EscapeRoomGame:
             elif self.player.name not in self.room["container"]:
                 self.output("VICTORY! You escaped!")
                 self.status = "escaped"
-        
-def main(args):
-    s=socket.socket()
-    s.connect(ADDR)
-    list=["Shi Tang","look mirror","get hairpin","unlock door with hairpin","open door"]
-    for i in range(len (list)):
-        print(i)
-        aa=s.recv(1024)
-        b=aa.decode()
-        print(b)
-        n=list[i].encode()
-        s.send(n)
-        time.sleep(0.25)
-        i=i+1
-    suc_res = s.recv(1024)
-    print(suc_res.decode())
 
-    def gs_message(result):
-        result=result + "<EOL>\n"
+
+class EchoServerClientProtocol(asyncio.Protocol):
+    def connection_made(self, transport):
+        self.transport = transport
+        self.game = EscapeRoomGame()
+        self.game.output = self.send_message
+        self.game.create_game()
+        self.game.start()
+
+    def data_received(self, data):
+        message = data.decode()
+        command = message.split("<EOL>\n")
+        for i in command:
+            if(i != ""):
+                print(i)
+                output = self.game.command(i)
+
+        if self.game.status == "escaped":
+            print("Success")
+            self.transport.close()
+
+
+    def send_message(self,result):
+        result = result + "<EOL>\n"
         print(result)
-        s.send(result.encode('utf-8'))
+        self.transport.write(result.encode())
 
+def main(args):
+    loop = asyncio.get_event_loop()
+    coro = loop.create_server(EchoServerClientProtocol,'192.168.200.116', 7074)  #这个EchoServerClientProtocol为啥一定要张这个样子
+    server = loop.run_until_complete(coro)
 
-    game = EscapeRoomGame()
-    game.output=gs_message
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+
+    """game = EscapeRoomGame()
     game.create_game(cheat=("--cheat" in args))
     game.start()
     while game.status == "playing":
-        aa=s.recv(1024)
+        aa=data_received
         commond=aa.decode().split("<EOL>\n")
         for i in commond:
             if i !="":
                 output = game.command(i)
         if game.status == "escaped":
             print("Ojbk")
-        #command = input(">> ")
-        s.close()
+        #command = input(">> ")"""
+    server.close()
+    loop.run_until_complete(server.wait_close())
+    loop.close()
+
 if __name__=="__main__":
     main(sys.argv[1:])
