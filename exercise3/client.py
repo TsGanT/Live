@@ -38,7 +38,7 @@ class EchoClient(asyncio.Protocol):
 
         print(data.decode())
 
-        list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,7074", "get hairpin", "look chest", "unlock chest with hairpin", "open chest", "gey hammer","unlock door with hairpin","open door"]
+        list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,7074", "get hairpin", "look chest", "unlock chest with hairpin", "open chest", "get hammer","unlock door with hairpin","open door"]
         for i in list:
             print(i)
             commond=self.send_message(i)
