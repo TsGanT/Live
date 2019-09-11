@@ -142,7 +142,7 @@ class EscapeRoomCommandHandler:
             success_result = "You got it"
             get_result = (
                 ((not container or container["container"] == False)and "You can't get. something out of that!") or
-                ((container["openable"] and not container["open"]) and "It's not open") or
+                ((container["openable"] and not container["open"]) and "It's not open.") or
                 ((not object or not object["visible"])             and "You don't see that") or
                 ((not object["gettable"])                          and "You can't get that.") or
                                                                    success_result)
