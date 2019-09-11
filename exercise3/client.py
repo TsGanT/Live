@@ -63,7 +63,7 @@ class EchoClient(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = loop.create_connection(EchoClient,'192.168.200.116', 7074)
+	coro = loop.create_connection(EchoClient,'192.168.200.52', 7074)
 	client = loop.run_until_complete(coro)
 
 	try:
