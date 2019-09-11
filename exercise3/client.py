@@ -38,8 +38,8 @@ class EchoClient(asyncio.Protocol):
         print(data.decode())
         result = data.decode()
         flag = result.split(" ")
-        if flag[0] == "OK":
-            list=["OK,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+        if flag[0] == "SUBMIT":
+            list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
                     "look chest", "unlock chest with hairpin", "open chest", "get hammer in chest",
                     "unlock door with hairpin", "open door"]
             for i in list:
