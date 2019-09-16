@@ -27,6 +27,11 @@ s.close()"""
 
 import asyncio
 
+list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+        "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
+        "get key","unlock door with key", "open door"] 
+i=0
+
 class EchoClient(asyncio.Protocol):
     def __init__(self):
         self.loop=loop
@@ -38,16 +43,35 @@ class EchoClient(asyncio.Protocol):
         print(data.decode())
         result = data.decode()
         flag = result.split(" ")
-        if flag[0] == "SUBMIT":
-            list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
-                    "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
-                    "get key","unlock door with key", "open door"]
-            for i in list:
+
+        if i != 7:
+            print(i)
+            commond=self.send_message(i)
+            self.transport.write(commond.encode())
+            i+=1  
+        else:
+            if flag[1] == "hit":
                 print(i)
                 commond=self.send_message(i)
                 self.transport.write(commond.encode())
-                result = data.decode()
-                flag = result.split(" ")
+                i+=1  
+            else:
+                i=i-1
+                print(i)
+                commond=self.send_message(i)
+                self.transport.write(commond.encode())
+                time.sleep(2)
+                i=i+1
+        
+
+        
+        
+            
+            commond=self.send_message("hit flyingkey with hammer")
+            self.send_message.write(commond.encode())
+            while flag[-1] == "You can't reach it up there!" or flag[-1] == "It's too low to hit.":
+
+
                 while flag[-1] == "You can't reach it up there!" or flag[-1] == "It's too low to hit.":
                     commond=self.send_message("hit flyingkey with hammer")
                     self.transport.write(commond.encode())
