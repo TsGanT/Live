@@ -26,10 +26,20 @@ print(suc_res.decode())
 s.close()"""
 
 import asyncio
+import time
+list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+        "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
+        "get key","unlock door with key", "open door"] 
+
 
 class EchoClient(asyncio.Protocol):
+    
     def __init__(self):
         self.loop=loop
+        self.i=0
+        self.list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+                     "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
+                     "get key","unlock door with key", "open door"] 
 
     def connection_made(self, transport):
         self.transport=transport
@@ -38,21 +48,26 @@ class EchoClient(asyncio.Protocol):
         print(data.decode())
         result = data.decode()
         flag = result.split(" ")
-        if flag[0] == "SUBMIT":
-            list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
-                    "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
-                    "get key","unlock door with key", "open door"]
-            for i in list:
-                print(i)
-                commond=self.send_message(i)
+
+        if self.i != 7:
+            print(self.list[self.i])
+            commond=self.send_message(self.list[self.i])
+            self.transport.write(commond.encode())
+            self.i+=1  
+        else:
+            if flag[1] == "hit":
+                print(self.list[self.i])
+                commond=self.send_message(self.list[self.i])
                 self.transport.write(commond.encode())
-                result = data.decode()
-                flag = result.split(" ")
-                while flag[-1] == "You can't reach it up there!" or flag[-1] == "It's too low to hit.":
-                    commond=self.send_message("hit flyingkey with hammer")
-                    self.transport.write(commond.encode())
-                    result = data.decode()
-                    flag = result.split(" ")
+                self.i+=1  
+            else:
+                self.i=self.i-1
+                print(self.list[self.i])
+                commond=self.send_message(self.list[self.i])
+                self.transport.write(commond.encode())
+                time.sleep(2)
+                self.i=self.i+1
+    
 
     def send_message(self, message):
         command = message + "<EOL>\n"
