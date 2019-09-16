@@ -40,14 +40,19 @@ class EchoClient(asyncio.Protocol):
         flag = result.split(" ")
         if flag[0] == "SUBMIT":
             list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
-                    "look chest", "unlock chest with hairpin", "open chest", "get hammer in chest",
-                    "unlock door with hairpin", "open door"]
+                    "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
+                    "get key","unlock door with key", "open door"]
             for i in list:
                 print(i)
                 commond=self.send_message(i)
                 self.transport.write(commond.encode())
-            
-            
+                result = data.decode()
+                flag = result.split(" ")
+                while flag[-1] == "You can't reach it up there!" or flag[-1] == "It's too low to hit.":
+                    commond=self.send_message("hit flyingkey with hammer")
+                    self.transport.write(commond.encode())
+                    result = data.decode()
+                    flag = result.split(" ")
 
     def send_message(self, message):
         command = message + "<EOL>\n"
@@ -63,7 +68,7 @@ class EchoClient(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = loop.create_connection(EchoClient,'192.168.200.52', 19003)
+	coro = loop.create_connection(EchoClient,'192.168.200.52', 19004)
 	client = loop.run_until_complete(coro)
 
 	try:
