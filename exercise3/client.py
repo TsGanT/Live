@@ -39,7 +39,7 @@ class EchoClient(asyncio.Protocol):
         self.i=0
         self.list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
                      "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
-                     "get key","unlock door with key", "open door"] 
+                     "get key","unlock door with key", "open door","",""] 
 
     def connection_made(self, transport):
         self.transport=transport
