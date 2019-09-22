@@ -10,7 +10,7 @@ class GameCommandPacket(PacketType):
     DEFINITION_IDENTIFIER = "test.GameCommandPacket"
     DEFINITION_VERSION = "1.0"
     FIELDS = [
-              ("original", BOOL),
+              #("original", BOOL),
               ("message", STRING)
              ]
 class EchoClientProtocol(asyncio.Protocol):
@@ -39,7 +39,7 @@ class EchoClientProtocol(asyncio.Protocol):
         print("Connected to {}".format(transport.get_extra_info("peername")))
         packet1 = AutogradeStartTest()
         packet1.name = "Shi Tang"
-        packet1.team = "team4"
+        packet1.team = 4
         packet1.email = "stang47@jhu.edu"
         packet1.port = 2001
         packet1.packet_file = b""
