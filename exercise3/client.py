@@ -64,8 +64,6 @@ class EchoClientProtocol(asyncio.Protocol):
                     self.send(commond)
                     time.sleep(1)
                     self.i=self.i+1
-        else:
-            print("Got a message from server marked as original. Dropping.")
                 
 
     def send_message(self, message):
