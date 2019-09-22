@@ -54,6 +54,12 @@ class EchoServerProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         print("Received a connection from {}".format(transport.get_extra_info("peername")))
         self.transport = transport
+        self.game = EscapeRoomGame()
+        self.game.output = self.send_message
+        self.game.create_game()
+        self.game.start()
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self.agent())
         
     def connection_lost(self, reason=None):
         print("Lost connection to client. Cleaning up.")
@@ -70,13 +76,24 @@ class EchoServerProtocol(asyncio.Protocol):
                     return
                 
                 responsePacket = EchoPacket()
-                responsePacket.original = False # To prevent potentially infinte loops?
-                responsePacket.message = echoPacket.message
+                responsePacket.original = False # To prevent potentially infinte loops?牛逼
+                responsePacket.message = self.send_message(echoPacket.message)
                 
-                self.transport.write(responsePacket.__serialize__())
-                
+                self.transport.write(responsePacket.__serialize__())                
             else:
                 print("Got a packet from client not marked as 'original'. Dropping")
+
+        if self.game.status == "escaped":
+            print("Success")
+            self.transport.close()
+
+    async def agent(self):
+        await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
+
+    def send_message(self,result):
+        result = result + "<EOL>\n"
+        print(result)
+        return result
         
         
 class EchoClientProtocol(asyncio.Protocol):
@@ -92,6 +109,11 @@ class EchoClientProtocol(asyncio.Protocol):
             self.callback = print
         self.transport = None
         self.deserializer = EchoPacket.Deserializer()
+        #self.loop=loop
+        self.i=0
+        self.list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+                     "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
+                     "get key","unlock door with key", "open door","",""] 
         
     def close(self):
         self.__sendMessageActual("__QUIT__")
@@ -105,8 +127,32 @@ class EchoClientProtocol(asyncio.Protocol):
         for echoPacket in self.deserializer.nextPackets():
             if echoPacket.original == False:
                 self.callback(echoPacket.message)
+                flag = echoPacket.message.split(" ")
+                if self.i != 7:
+                    print(self.list[self.i])
+                    commond=self.send_message(self.list[self.i])
+                    self.send(commond)
+                    self.i+=1  
+                else:
+                    if flag[1] == "hit":
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        self.i+=1  
+                    else:
+                        self.i=self.i-1
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        time.sleep(2)
+                        self.i=self.i+1
             else:
                 print("Got a message from server marked as original. Dropping.")
+                
+
+    def send_message(self, message):
+        command = message + "<EOL>\n"
+        return command
         
     def send(self, data):
         echoPacket = EchoPacket(original=True, message=data)

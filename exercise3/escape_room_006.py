@@ -2,7 +2,8 @@
 Escape Room Core
 """
 import random, sys, asyncio
-import playground
+from playground.network.packet import PacketType
+from playground.network.packet import fieldtypes
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -255,7 +256,7 @@ def flyingkey_hit_trigger(room, flyingkey, key, output):
     else:
         flyingkey["flying"] = False
         del room["container"][flyingkey.name]
-        room["container"][key.name] = key     #when hit the flying key, the real key finally get onto the room contian
+        room["container"][key.name] = key
         output("The flying key falls off the wall. When it hits the ground, it's wings break off and you now see an ordinary key.")
         
 def short_description(object):
@@ -305,56 +306,32 @@ class EscapeRoomGame:
         door.triggers.append(lambda obj, cmd, *args: (cmd == "open") and room["container"].__delitem__(player.name))
         room.triggers.append(lambda obj, cmd, *args: (cmd == "_post_command_") and advance_time(room, clock))
         flyingkey.triggers.append((lambda obj, cmd, *args: (cmd == "hit" and args[0] in obj["smashers"]) and flyingkey_hit_trigger(room, flyingkey, key, self.output)))
-        
-        # TODO, the chest needs some triggers. Please make the chest
-        # update it's description when it's unlocked and when it's opened.
-        # hint: the function create_chest_description already has the right
-        # text, but it needs to be called at the right time.
+        # TODO, the chest needs some triggers. This is for a later exercise
         
         self.room, self.player = room, player
         self.command_handler = self.command_handler_class(room, player, self.output)
         self.agents.append(self.flyingkey_agent(flyingkey))
         self.status = "created"
         
-    def move_flyingkey(self, flyingkey):
-        locations = ["ceiling","floor","wall"]
-        locations.remove(flyingkey["location"])
-        random.shuffle(locations)
-        next_location = locations.pop(0)
-        old_location = flyingkey["location"]
-        flyingkey["location"] = next_location
-        flyingkey["description"] = create_flyingkey_description(flyingkey)
-        flyingkey["short_description"] = create_flyingkey_short_description(flyingkey)
-        flyingkey["hittable"] = next_location == "wall"
-        self.output("The {} flies from the {} to the {}".format(flyingkey.name, old_location, next_location))
-        for event in self.room.do_trigger("_post_command_"):
-            self.output(event)
-        
     async def flyingkey_agent(self, flyingkey):
-        # this is the part you, the student, fills in.
-        # you will probably need to use:
-        #  - asyncio.sleep (I recommend 5 seconds)
-        #  - self.status, you'll need to stop when no longer playing
-        #  - check if the flyingkey is still flying
-        #  - of course, "move_flyingkey"
-        #if self.status != 'playing':
-         #   asyncio.get_event_loop().stop()
-
-        self.move_flyingkey(flyingkey)
-        while flyingkey["location"] != "wall":
-            if self.status != 'playing':
-                asyncio.get_event_loop().stop()
+        random.seed(0) # this should make everyone's random behave the same.
+        await asyncio.sleep(5) # sleep before starting the while loop
+        while self.status == "playing" and flyingkey["flying"]:
+            locations = ["ceiling","floor","wall"]
+            locations.remove(flyingkey["location"])
+            random.shuffle(locations)
+            next_location = locations.pop(0)
+            old_location = flyingkey["location"]
+            flyingkey["location"] = next_location
+            flyingkey["description"] = create_flyingkey_description(flyingkey)
+            flyingkey["short_description"] = create_flyingkey_short_description(flyingkey)
+            flyingkey["hittable"] = next_location == "wall"
+            self.output("The {} flies from the {} to the {}".format(flyingkey.name, old_location, next_location))
+            for event in self.room.do_trigger("_post_command_"):
+                self.output(event)
             await asyncio.sleep(5)
-            self.move_flyingkey(flyingkey)
-        else:
-            flyingkey.hittable = True
-            await asyncio.sleep(5)
-            self.move_flyingkey(flyingkey)
-
-
     
     def start(self):
-        random.seed(0) # this should make everyone's random behave the same.
         self.status = "playing"
         self.output("Where are you? You don't know how you got here... Were you kidnapped? Better take a look around")
         
@@ -373,8 +350,8 @@ class EscapeRoomGame:
                 self.output("You died. Game over!")
                 self.status = "dead"
             elif self.player.name not in self.room["container"]:
-                self.output("VICTORY! You escaped!")
                 self.status = "escaped"
+                self.output("VICTORY! You escaped!")
                 
 def game_next_input(game):
     input = sys.stdin.readline().strip()
@@ -387,99 +364,16 @@ def game_next_input(game):
 def flush_output(*args, **kargs):
     print(*args, **kargs)
     sys.stdout.flush()
-
-
-class EchoPacket(PacketType):
-    """
-    EchoProtocolPacket is a simple message for sending a bit of 
-    data and getting the same data back as a response (echo). The
-    "header" is simply a 1-byte boolean that indicates whether or
-    not it is the original message or the echo.
-    """
-    
-    # We can use **ANY** string for the identifier. A common convention is to
-    # Do a fully qualified name of some set of messages.
-    DEFINITION_IDENTIFIER = "test.EchoPacket"
-    
-    # Message version needs to be x.y where x is the "major" version
-    # and y is the "minor" version. All Major versions should be
-    # backwards compatible. Look at "ClientToClientMessage" for
-    # an example of multiple versions
-    DEFINITION_VERSION = "1.0"
-    FIELDS = [
-              ("original", BOOL),
-              ("message", STRING)
-             ]
-
-class EchoServerProtocol(asyncio.Protocol):
-    """
-    This is our class for the Server's protocol. It simply receives
-    an EchoProtocolMessage and sends back a response
-    """
-    def __init__(self):
-        self.deserializer = EchoPacket.Deserializer()
-        self.transport = None
         
-    def connection_made(self, transport):
-        print("Received a connection from {}".format(transport.get_extra_info("peername")))
-        self.transport = transport
-        self.game = EscapeRoomGame()
-        self.game.output = self.send_message
-        self.game.create_game()
-        self.game.start()
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self.agent())
-        
-    def connection_lost(self, reason=None):
-        print("Lost connection to client. Cleaning up.")
-        
-    def data_received(self, data):
-        self.deserializer.update(data)
-        for echoPacket in self.deserializer.nextPackets():
-            if echoPacket.original:
-                print("Got {} from client.".format(echoPacket.message))
-                
-                if echoPacket.message == "__QUIT__":
-                    print("Client instructed server to quit. Terminating")
-                    self.transport.close()
-                    return
-                
-                responsePacket = EchoPacket()
-                responsePacket.original = False # To prevent potentially infinte loops?牛逼
-                responsePacket.message = self.send_message(echoPacket.message)
-                
-                self.transport.write(responsePacket.__serialize__())                
-            else:
-                print("Got a packet from client not marked as 'original'. Dropping")
-
-        if self.game.status == "escaped":
-            print("Success")
-            self.transport.close()
-
-    async def agent(self):
-        await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
-
-    def send_message(self,result):
-        result = result + "<EOL>\n"
-        print(result)
-        return result
-
-def main():
+async def main(args):
     loop = asyncio.get_event_loop()
-    coro = playground.create_server(EchoServerClientProtocol,'localhost', 2001)  
-    server = loop.run_until_complete(coro)
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
-    server.close()
-    loop.run_until_complete(server.wait_close())
-    loop.close()
-
+    game = EscapeRoomGame(output=flush_output)
+    game.create_game(cheat=("--cheat" in args))
+    game.start()
+    flush_output(">> ", end='')
+    loop.add_reader(sys.stdin, game_next_input, game)
+    await asyncio.wait([asyncio.ensure_future(a) for a in game.agents])
         
 if __name__=="__main__":
-    main()
-
-
-    
+    asyncio.ensure_future(main(sys.argv[1:]))
+    asyncio.get_event_loop().run_forever()

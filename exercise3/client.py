@@ -1,30 +1,5 @@
-"""import socket
-import time
-
-HOST='192.168.200.52'
-PORT=19002
-BUFSIZE=1024
-ADDR=(HOST, PORT)
-s=socket.socket()
-CliSock=socket(AF_INET, SOCK_STREAM)
-s.connect(ADDR)
-
-list=["Shi Tang","look mirror","get hairpin","unlock door with hairpin","open door"]
-
-for i in range(len (list)):
-    print(i)
-    aa=s.recv(1024)
-    b=aa.decode()
-    print(b)
-    n=list[i].encode()
-    s.send(n)
-    time.sleep(0.25)
-    i=i+1
-suc_res = s.recv(1024)
-print(suc_res.decode())
-
-s.close()"""
-
+from playground.network.packet import PacketType
+from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER
 import asyncio
 import time
 import playground
@@ -33,57 +8,77 @@ list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpi
         "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
         "get key","unlock door with key", "open door"] 
 
+class MyPacket(PacketType):
+    DEFINITION_IDENTIFIER = “lab2b.student_x.MyPacket”
+    DEFINITION_VERSION = “1.0”
 
-class EchoClient(asyncio.Protocol):
-    
-    def __init__(self):
-        self.loop=loop
+    FIELDS = [
+              ("original", BOOL),
+              ("message", STRING)
+             ]
+
+class EchoClientProtocol(asyncio.Protocol):
+    """
+    This is our class for the Client's protocol. It provides an interface
+    for sending a message. When it receives a response, it prints it out.
+    """
+    def __init__(self, callback=None):
+        self.buffer = ""
+        if callback:
+            self.callback = callback
+        else:
+            self.callback = print
+        self.transport = None
+        self.deserializer = EchoPacket.Deserializer()
+        #self.loop=loop
         self.i=0
         self.list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
                      "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
                      "get key","unlock door with key", "open door","",""] 
         
-
+    def close(self):
+        self.__sendMessageActual("__QUIT__")
+        
     def connection_made(self, transport):
-        self.transport=transport
-        self.transport.write(("<EOL>\n").encode())
-
+        print("Connected to {}".format(transport.get_extra_info("peername")))
+        self.transport = transport
+        
     def data_received(self, data):
-        print(data.decode())
-        result = data.decode()
-        flag = result.split(" ")
-
-        if self.i != 7:
-            print(self.list[self.i])
-            commond=self.send_message(self.list[self.i])
-            self.transport.write(commond.encode())
-            self.i+=1  
-        else:
-            if flag[1] == "hit":
-                print(self.list[self.i])
-                commond=self.send_message(self.list[self.i])
-                self.transport.write(commond.encode())
-                self.i+=1  
+        self.deserializer.update(data)
+        for echoPacket in self.deserializer.nextPackets():
+            if echoPacket.original == False:
+                self.callback(echoPacket.message)
+                flag = echoPacket.message.split(" ")
+                if self.i != 7:
+                    print(self.list[self.i])
+                    commond=self.send_message(self.list[self.i])
+                    self.send(commond)
+                    self.i+=1  
+                else:
+                    if flag[1] == "hit":
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        self.i+=1  
+                    else:
+                        self.i=self.i-1
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        time.sleep(2)
+                        self.i=self.i+1
             else:
-                self.i=self.i-1
-                print(self.list[self.i])
-                commond=self.send_message(self.list[self.i])
-                self.transport.write(commond.encode())
-                time.sleep(2)
-                self.i=self.i+1
-    
+                print("Got a message from server marked as original. Dropping.")
+                
 
     def send_message(self, message):
         command = message + "<EOL>\n"
         return command
-
-    def connection_lost(self, exc):
-        print('The server closed the connection')
-        print('Stop the event loop')
-        self.loop.stop()
-    
-
-
+        
+    def send(self, data):
+        echoPacket = EchoPacket(original=True, message=data)
+        
+        self.transport.write(echoPacket.__serialize__())
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
