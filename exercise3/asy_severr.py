@@ -3,6 +3,8 @@ Escape Room Core
 """
 import random, sys, asyncio
 import playground
+from playground.network.packet import PacketType
+from playground.network.packet.fieldtypes import BOOL, STRING
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -390,21 +392,8 @@ def flush_output(*args, **kargs):
 
 
 class EchoPacket(PacketType):
-    """
-    EchoProtocolPacket is a simple message for sending a bit of 
-    data and getting the same data back as a response (echo). The
-    "header" is simply a 1-byte boolean that indicates whether or
-    not it is the original message or the echo.
-    """
-    
-    # We can use **ANY** string for the identifier. A common convention is to
-    # Do a fully qualified name of some set of messages.
+
     DEFINITION_IDENTIFIER = "test.EchoPacket"
-    
-    # Message version needs to be x.y where x is the "major" version
-    # and y is the "minor" version. All Major versions should be
-    # backwards compatible. Look at "ClientToClientMessage" for
-    # an example of multiple versions
     DEFINITION_VERSION = "1.0"
     FIELDS = [
               ("original", BOOL),

@@ -3,6 +3,7 @@ from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER
 import asyncio
 import time
 import playground
+import autograder_ex6_packets
 
 list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
         "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
@@ -39,6 +40,13 @@ class EchoClientProtocol(asyncio.Protocol):
         
     def connection_made(self, transport):
         print("Connected to {}".format(transport.get_extra_info("peername")))
+        packet1 = AutogradeStartTest()
+        packet1.name = "Shi Tang"
+        packet1.team = "team4"
+        packet1.email = "stang47@jhu.edu"
+        packet1.port = 19005
+        packet1.packet_file = b""
+        self.transport.write(packet1.__serialize__())
         self.transport = transport
         
     def data_received(self, data):
