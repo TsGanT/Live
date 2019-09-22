@@ -14,22 +14,13 @@ class EchoClientProtocol(asyncio.Protocol):
     This is our class for the Client's protocol. It provides an interface
     for sending a message. When it receives a response, it prints it out.
     """
-    def __init__(self, callback=None):
-        self.buffer = ""
-        if callback:
-            self.callback = callback
-        else:
-            self.callback = print
-        self.transport = None
+    def __init__(self):
         self.deserializer = GameCommandPacket.Deserializer()
         #self.loop=loop
         self.i=0
         self.list=[  "look mirror","get hairpin", 
                      "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
-                     "get key","unlock door with key", "open door","",""] 
-        
-    def close(self):
-        self.__sendMessageActual("__QUIT__")
+                     "get key","unlock door with key", "open door","",""]        
         
     def connection_made(self, transport):
         self.transport = transport
