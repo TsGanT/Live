@@ -50,7 +50,8 @@ class EchoClientProtocol(asyncio.Protocol):
                     self.i += 1
                 else:
                     if flag[1] == "hit":
-                        self.send(" ")
+                        a="lala"
+                        self.send(a)
                         time.sleep(1)
                         print(self.list[self.i])
                         commond = self.list[self.i]
@@ -67,6 +68,7 @@ class EchoClientProtocol(asyncio.Protocol):
 
 
     def send(self, data):
+        print(a)
         g = GameCommandPacket()
         ePacket = g.create_game_command_packet(data)
         self.transport.write(ePacket.__serialize__())
