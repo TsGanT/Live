@@ -1,5 +1,5 @@
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import BOOL, STRING, TIME
+from playground.network.packet.fieldtypes import BOOL, STRING
 
 class GameCommandPacket(PacketType):
     DEFINITION_IDENTIFIER = "client.GameCommandPacket"
