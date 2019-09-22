@@ -15,8 +15,7 @@ class EchoClientProtocol(asyncio.Protocol):
     for sending a message. When it receives a response, it prints it out.
     """
     def __init__(self):
-        self.deserializer = GameCommandPacket.Deserializer()
-        #self.loop=loop
+        self.deserializer = PacketType.Deserializer()
         self.i=0
         self.list=[  "look mirror","get hairpin", 
                      "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
@@ -29,34 +28,36 @@ class EchoClientProtocol(asyncio.Protocol):
         with open("field.py", "rb") as f:
             packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
+        print("aa")
                
     def data_received(self, data):
-        #self.deserializer.update(data)
         self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
-            if echoPacket.original == False:
-                    #self.callback(echoPacket.message)
+            if isinstance(echoPacket, AutogradeTestStatus):
+                print(echoPacket.client_status)
+                print(echoPacket.error)
+            if isinstance(echoPacket, GameResponsePacket):
+                print(echoPacket.responsee)
                 flag = echoPacket.responsee.split(" ")
-                if self.i != 6:
-                    print(self.list[self.i])
-                    commond=self.send_message(self.list[self.i])
-                    self.send(commond)
-                    self.i+=1  
-                else:
-                    if flag[1] == "hit":
-                        print(self.list[self.i])
-                        commond=self.send_message(self.list[self.i])
-                        self.send(commond)
-                        self.i+=1  
-                    else:
-                        self.i=self.i-1
-                        print(self.list[self.i])
-                        commond=self.send_message(self.list[self.i])
-                        self.send(commond)
-                        time.sleep(1)
-                        self.i=self.i+1
-            else:
-                print("Got a message from server marked as original. Dropping.")
+                # if self.i != 6:
+                #     print(self.list[self.i])
+                #     commond=self.send_message(self.list[self.i])
+                #     self.send(commond)
+                #     self.i+=1  
+                # else:
+                #     if flag[1] == "hit":
+                #         print(self.list[self.i])
+                #         commond=self.send_message(self.list[self.i])
+                #         self.send(commond)
+                #         self.i+=1  
+                #     else:
+                #         self.i=self.i-1
+                #         print(self.list[self.i])
+                #         commond=self.send_message(self.list[self.i])
+                #         self.send(commond)
+                #         time.sleep(1)
+                #         self.i=self.i+1
+
                 
 
     def send_message(self, message):
