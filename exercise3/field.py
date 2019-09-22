@@ -11,7 +11,7 @@ class GameCommandPacket(PacketType):
 
     @classmethod
     def create_game_command_packet(cls, s):
-        return cls(self.messsage = s )
+        return cls(message = s )
     
     def command(self):
         return self.message
