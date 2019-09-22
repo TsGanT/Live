@@ -28,7 +28,6 @@ class EchoClientProtocol(asyncio.Protocol):
         with open("field.py", "rb") as f:
             packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
-        print("aa")
                
     def data_received(self, data):
         self.deserializer.update(data)
@@ -39,33 +38,33 @@ class EchoClientProtocol(asyncio.Protocol):
             if isinstance(echoPacket, GameResponsePacket):
                 print(echoPacket.responsee)
                 flag = echoPacket.responsee.split(" ")
-                # if self.i != 6:
-                #     print(self.list[self.i])
-                #     commond=self.send_message(self.list[self.i])
-                #     self.send(commond)
-                #     self.i+=1  
-                # else:
-                #     if flag[1] == "hit":
-                #         print(self.list[self.i])
-                #         commond=self.send_message(self.list[self.i])
-                #         self.send(commond)
-                #         self.i+=1  
-                #     else:
-                #         self.i=self.i-1
-                #         print(self.list[self.i])
-                #         commond=self.send_message(self.list[self.i])
-                #         self.send(commond)
-                #         time.sleep(1)
-                #         self.i=self.i+1
+                if self.i != 6:
+                    print(self.list[self.i])
+                    commond=self.list[self.i]
+                    self.send(commond)
+                    self.i+=1  
+                else:
+                    if flag[1] == "hit":
+                        print(self.list[self.i])
+                        commond=self.list[self.i]
+                        self.send(commond)
+                        self.i+=1  
+                    else:
+                        self.i=self.i-1
+                        print(self.list[self.i])
+                        commond=self.list[self.i]
+                        self.send(commond)
+                        time.sleep(1)
+                        self.i=self.i+1
 
                 
 
-    def send_message(self, message):
-        command = message + "<EOL>\n"
-        return command
+    # def send_message(self, message):
+    #     command = message + "<EOL>\n"
+    #     return command
         
     def send(self, data):
-        echoPacket = GameCommandPacket(message=data)        
+        echoPacket = GameCommandPacket.create_game_command_packet(data)       
         self.transport.write(echoPacket.__serialize__())
 
 if __name__ == "__main__":
