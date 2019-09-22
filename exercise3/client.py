@@ -4,6 +4,7 @@ import asyncio
 import time
 import playground
 from autograder_ex6_packets import AutogradeStartTest
+from autograder_ex6_packets import AutogradeTestStatus
 from field import GameCommandPacket
 from field import GameResponsePacket
 
