@@ -48,6 +48,8 @@ class EchoClientProtocol(asyncio.Protocol):
         
     def data_received(self, data):
         self.deserializer.update(data)
+        autogradeTestStatus = self.deserializer.AutogradeTestStatus()
+        print(autogradeTestStatus)
         for echoPacket in self.deserializer.nextPackets():
             #if echoPacket.original == False:
                 #self.callback(echoPacket.message)
