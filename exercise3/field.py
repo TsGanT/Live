@@ -6,13 +6,12 @@ class GameCommandPacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-              #("original", BOOL),
               ("message", STRING)
              ]
 
     @classmethod
     def create_game_command_packet(cls, s):
-        return cls(messsage = s )
+        return cls(self.messsage = s )
     
     def command(self):
         return self.message
@@ -22,7 +21,6 @@ class GameResponsePacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-              #("original", BOOL),
               ("responsee", STRING),
               ("statuss", STRING)
              ]
