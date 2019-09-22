@@ -43,27 +43,29 @@ class EchoClientProtocol(asyncio.Protocol):
         #self.deserializer.update(data)
         self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
-            #if echoPacket.original == False:
-                #self.callback(echoPacket.message)
-            flag = echoPacket.responsee.split(" ")
-            if self.i != 6:
-                print(self.list[self.i])
-                commond=self.send_message(self.list[self.i])
-                self.send(commond)
-                self.i+=1  
-            else:
-                if flag[1] == "hit":
+            if echoPacket.original == False:
+                    #self.callback(echoPacket.message)
+                flag = echoPacket.responsee.split(" ")
+                if self.i != 6:
                     print(self.list[self.i])
                     commond=self.send_message(self.list[self.i])
                     self.send(commond)
                     self.i+=1  
                 else:
-                    self.i=self.i-1
-                    print(self.list[self.i])
-                    commond=self.send_message(self.list[self.i])
-                    self.send(commond)
-                    time.sleep(1)
-                    self.i=self.i+1
+                    if flag[1] == "hit":
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        self.i+=1  
+                    else:
+                        self.i=self.i-1
+                        print(self.list[self.i])
+                        commond=self.send_message(self.list[self.i])
+                        self.send(commond)
+                        time.sleep(1)
+                        self.i=self.i+1
+            else:
+                print("Got a message from server marked as original. Dropping.")
                 
 
     def send_message(self, message):
