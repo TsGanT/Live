@@ -42,6 +42,7 @@ class EchoClientProtocol(asyncio.Protocol):
                     print(self.list[self.i])
                     commond=self.list[self.i]
                     self.send(commond)
+                    print("woshiniba")
                     self.i+=1  
                 else:
                     if flag[1] == "hit":
