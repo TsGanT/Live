@@ -48,9 +48,9 @@ class EchoClientProtocol(asyncio.Protocol):
                     commond = self.list[self.i]
                     self.send(commond)
                     self.i += 1
-                    time.sleep(1)
                 else:
                     if flag[1] == "hit":
+                        time.sleep(3)
                         print(self.list[self.i])
                         commond = self.list[self.i]
                         self.send(commond)
