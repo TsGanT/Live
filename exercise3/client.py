@@ -8,15 +8,13 @@ list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpi
         "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
         "get key","unlock door with key", "open door"] 
 
-class MyPacket(PacketType):
-    DEFINITION_IDENTIFIER = “lab2b.student_x.MyPacket”
-    DEFINITION_VERSION = “1.0”
-
+class EchoPacket(PacketType):
+    DEFINITION_IDENTIFIER = "test.EchoPacket"
+    DEFINITION_VERSION = "1.0"
     FIELDS = [
               ("original", BOOL),
               ("message", STRING)
              ]
-
 class EchoClientProtocol(asyncio.Protocol):
     """
     This is our class for the Client's protocol. It provides an interface
