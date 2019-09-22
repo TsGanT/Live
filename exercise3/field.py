@@ -6,36 +6,36 @@ class GameCommandPacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-              ("original", BOOL),
+              #("original", BOOL),
               ("message", STRING)
              ]
 
     @classmethod
     def create_game_command_packet(cls, s):
-        return cls( # whatever arguments needed to construct the packet)
+        return cls(messsage = s )
     
     def command(self):
-        return # whatever you need to get the command for the game
+        return self.message
     
 class GameResponsePacket(PacketType):
     DEFINITION_IDENTIFIER = "server.GameResponsePacket"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-              ("original", BOOL),
-              ("message", STRING),
-              ("time", TIME)
+              #("original", BOOL),
+              ("responsee", STRING),
+              ("statuss", STRING)
              ]
 
     @classmethod
     def create_game_response_packet(cls, response, status):
-        return cls( # whatever you need to construct the packet )
+        return cls( responsee=response, statuss = status )
     
     def game_over(self):
-        return # whatever you need to do to determine if the game is over
+        return self.statuss != "playing"
     
     def status(self):
-        return # whatever you need to do to return the status
+        return self.statuss
     
     def response(self):
-        return # whatever you need to do to return the response
+        return self.responsee

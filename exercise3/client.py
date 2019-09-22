@@ -3,16 +3,11 @@ from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER, BOOL
 import asyncio
 import time
 import playground
-import autograder_ex6_packets
+from autograder_ex6_packets import AutogradeStartTest
+from field import GameCommandPacket
+from field import GameResponsePacket
 
 
-class GameCommandPacket(PacketType):
-    DEFINITION_IDENTIFIER = "test.GameCommandPacket"
-    DEFINITION_VERSION = "1.0"
-    FIELDS = [
-              #("original", BOOL),
-              ("message", STRING)
-             ]
 class EchoClientProtocol(asyncio.Protocol):
     """
     This is our class for the Client's protocol. It provides an interface
@@ -36,22 +31,20 @@ class EchoClientProtocol(asyncio.Protocol):
         self.__sendMessageActual("__QUIT__")
         
     def connection_made(self, transport):
+        self.transport = transport
         print("Connected to {}".format(transport.get_extra_info("peername")))
         packet1 = AutogradeStartTest(name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
-        with open("my_packet_file.py", "rb") as f:
-            packet.packet_file = f.read()
-        #packet1.packet_file = b""
+        with open("field.py", "rb") as f:
+            packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
-        self.transport = transport
-        
+               
     def data_received(self, data):
         #self.deserializer.update(data)
-        result = self.deserializer(data)
-        print(result)
+        self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
             #if echoPacket.original == False:
                 #self.callback(echoPacket.message)
-            flag = echoPacket.message.split(" ")
+            flag = echoPacket.responsee.split(" ")
             if self.i != 6:
                 print(self.list[self.i])
                 commond=self.send_message(self.list[self.i])
@@ -79,12 +72,12 @@ class EchoClientProtocol(asyncio.Protocol):
         return command
         
     def send(self, data):
-        echoPacket = GameCommandPacket(message=data)
-        
+        echoPacket = GameCommandPacket(message=data)        
         self.transport.write(echoPacket.__serialize__())
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
+    loop.set_debug(enabled = True)
 	coro = playground.create_connection(EchoClientProtocol,'20194.0.0.19000', 19006)
 	client = loop.run_until_complete(coro)
 
