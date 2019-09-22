@@ -44,7 +44,7 @@ class EchoClientProtocol(asyncio.Protocol):
         packet1.name = "Shi Tang"
         packet1.team = "team4"
         packet1.email = "stang47@jhu.edu"
-        packet1.port = 19005
+        packet1.port = 2001
         packet1.packet_file = b""
         self.transport.write(packet1.__serialize__())
         self.transport = transport
@@ -88,7 +88,7 @@ class EchoClientProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = playground.create_connection(EchoClient,'20194.0.0.19000', 19005)
+	coro = playground.create_connection(EchoEchoClientProtocol,'20194.0.0.19000', 19006)
 	client = loop.run_until_complete(coro)
 
 	try:
