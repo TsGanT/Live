@@ -67,8 +67,8 @@ class EchoClientProtocol(asyncio.Protocol):
     def send(self, data):
         print(data)
         g=GameCommandPacket()
-        echoPacket = g.create_game_command_packet(data)       
-        self.transport.write(echoPacket.__serialize__())
+        ePacket = g.create_game_command_packet(data)       
+        self.transport.write(ePacket.__serialize__())
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
