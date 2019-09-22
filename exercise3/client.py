@@ -52,7 +52,7 @@ class EchoClientProtocol(asyncio.Protocol):
             if echoPacket.original == False:
                 self.callback(echoPacket.message)
                 flag = echoPacket.message.split(" ")
-                if self.i != 7:
+                if self.i != 6:
                     print(self.list[self.i])
                     commond=self.send_message(self.list[self.i])
                     self.send(commond)
@@ -68,7 +68,7 @@ class EchoClientProtocol(asyncio.Protocol):
                         print(self.list[self.i])
                         commond=self.send_message(self.list[self.i])
                         self.send(commond)
-                        time.sleep(2)
+                        time.sleep(1)
                         self.i=self.i+1
             else:
                 print("Got a message from server marked as original. Dropping.")
