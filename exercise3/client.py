@@ -88,7 +88,7 @@ class EchoClientProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = playground.create_connection(EchoEchoClientProtocol,'20194.0.0.19000', 19006)
+	coro = playground.create_connection(EchoClientProtocol,'20194.0.0.19000', 19006)
 	client = loop.run_until_complete(coro)
 
 	try:
