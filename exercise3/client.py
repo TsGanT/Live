@@ -47,12 +47,14 @@ class EchoClientProtocol(asyncio.Protocol):
                     print(self.list[self.i])
                     commond = self.list[self.i]
                     self.send(commond)
+                    time.sleep(1)
                     self.i += 1
                 else:
                     if flag[1] == "hit":
                         print(self.list[self.i])
                         commond = self.list[self.i]
                         self.send(commond)
+                        time.sleep(1)
                         self.i += 1
                     else:
                         self.i = self.i-1
