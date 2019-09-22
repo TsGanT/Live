@@ -20,7 +20,7 @@ class EchoClientProtocol(asyncio.Protocol):
         self.i = 0
         self.list = ["look mirror", "get hairpin",
                      "unlock chest with hairpin", "open chest", "get hammer in chest", "hit flyingkey with hammer",
-                     "get key", "unlock door with key", "open door", "", ""]
+                     "get key", "unlock door with key", "open door", ""]
         # loop.set_debug(enabled=True)
         # from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
         # EnablePresetLogging(PRESET_DEBUG)
@@ -62,12 +62,7 @@ class EchoClientProtocol(asyncio.Protocol):
                         time.sleep(1)
                         self.i = self.i+1
 
-    # def send_message(self, message):
-    #     command = message + "<EOL>\n"
-    #     return command
-
     def send(self, data):
-        print(data)
         g = GameCommandPacket()
         ePacket = g.create_game_command_packet(data)
         self.transport.write(ePacket.__serialize__())
