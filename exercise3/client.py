@@ -1,5 +1,5 @@
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER, BULL
+from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER, BOOL
 import asyncio
 import time
 import playground
