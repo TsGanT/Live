@@ -42,7 +42,6 @@ class EchoClientProtocol(asyncio.Protocol):
                     print(self.list[self.i])
                     commond=self.list[self.i]
                     self.send(commond)
-                    print("woshiniba")
                     self.i+=1  
                 else:
                     if flag[1] == "hit":
@@ -72,6 +71,9 @@ class EchoClientProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
+    loop.set_debug(enabled=True)
+    from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
+    EnablePresetLogging(PRESET_DEBUG)
 	coro = playground.create_connection(EchoClientProtocol,'20194.0.0.19000', 19006)
 	client = loop.run_until_complete(coro)
 
