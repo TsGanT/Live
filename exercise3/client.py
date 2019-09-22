@@ -5,9 +5,6 @@ import time
 import playground
 import autograder_ex6_packets
 
-list=  ["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
-        "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
-        "get key","unlock door with key", "open door"] 
 
 class EchoPacket(PacketType):
     DEFINITION_IDENTIFIER = "test.EchoPacket"
@@ -31,7 +28,7 @@ class EchoClientProtocol(asyncio.Protocol):
         self.deserializer = EchoPacket.Deserializer()
         #self.loop=loop
         self.i=0
-        self.list=["SUBMIT,Shi Tang,stang47@jhu.edu,team 4,2001", "look mirror","get hairpin", 
+        self.list=[  "look mirror","get hairpin", 
                      "unlock chest with hairpin", "open chest", "get hammer in chest","hit flyingkey with hammer",
                      "get key","unlock door with key", "open door","",""] 
         
