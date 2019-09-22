@@ -6,8 +6,8 @@ import playground
 import autograder_ex6_packets
 
 
-class EchoPacket(PacketType):
-    DEFINITION_IDENTIFIER = "test.EchoPacket"
+class GameCommandPacket(PacketType):
+    DEFINITION_IDENTIFIER = "test.GameCommandPacket"
     DEFINITION_VERSION = "1.0"
     FIELDS = [
               ("original", BOOL),
@@ -25,7 +25,7 @@ class EchoClientProtocol(asyncio.Protocol):
         else:
             self.callback = print
         self.transport = None
-        self.deserializer = EchoPacket.Deserializer()
+        self.deserializer = GameCommandPacket.Deserializer()
         #self.loop=loop
         self.i=0
         self.list=[  "look mirror","get hairpin", 
@@ -49,29 +49,29 @@ class EchoClientProtocol(asyncio.Protocol):
     def data_received(self, data):
         self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
-            if echoPacket.original == False:
-                self.callback(echoPacket.message)
-                flag = echoPacket.message.split(" ")
-                if self.i != 6:
+            #if echoPacket.original == False:
+                #self.callback(echoPacket.message)
+            flag = echoPacket.message.split(" ")
+            if self.i != 6:
+                print(self.list[self.i])
+                commond=self.send_message(self.list[self.i])
+                self.send(commond)
+                self.i+=1  
+            else:
+                if flag[1] == "hit":
                     print(self.list[self.i])
                     commond=self.send_message(self.list[self.i])
                     self.send(commond)
                     self.i+=1  
                 else:
-                    if flag[1] == "hit":
-                        print(self.list[self.i])
-                        commond=self.send_message(self.list[self.i])
-                        self.send(commond)
-                        self.i+=1  
-                    else:
-                        self.i=self.i-1
-                        print(self.list[self.i])
-                        commond=self.send_message(self.list[self.i])
-                        self.send(commond)
-                        time.sleep(1)
-                        self.i=self.i+1
-            else:
-                print("Got a message from server marked as original. Dropping.")
+                    self.i=self.i-1
+                    print(self.list[self.i])
+                    commond=self.send_message(self.list[self.i])
+                    self.send(commond)
+                    time.sleep(1)
+                    self.i=self.i+1
+        else:
+            print("Got a message from server marked as original. Dropping.")
                 
 
     def send_message(self, message):
@@ -79,7 +79,7 @@ class EchoClientProtocol(asyncio.Protocol):
         return command
         
     def send(self, data):
-        echoPacket = EchoPacket(original=True, message=data)
+        echoPacket = GameCommandPacket(message=data)
         
         self.transport.write(echoPacket.__serialize__())
 
