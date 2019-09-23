@@ -436,6 +436,7 @@ class EchoServerProtocol(asyncio.Protocol):
 
 def main():
     loop = asyncio.get_event_loop()
+
     coro = playground.create_server(EchoServerProtocol,'localhost', 2001)  
     server = loop.run_until_complete(coro)
 

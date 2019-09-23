@@ -2,8 +2,11 @@
 Escape Room Core
 """
 import random, sys, asyncio
+import playground
 from playground.network.packet import PacketType
-from playground.network.packet import fieldtypes
+from autograder_ex6_packets import AutogradeTestStatus
+from field import GameCommandPacket
+from field import GameResponsePacket
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -364,16 +367,67 @@ def game_next_input(game):
 def flush_output(*args, **kargs):
     print(*args, **kargs)
     sys.stdout.flush()
+
+class EchoServerProtocol(asyncio.Protocol):
+    """
+    This is our class for the Server's protocol. It simply receives
+    an EchoProtocolMessage and sends back a response
+    """
+    def __init__(self):
+        self.transport = None
+        self.deserializer = PacketType.Deserializer()
         
-async def main(args):
+    def connection_made(self, transport):
+        print("Received a connection from {}".format(transport.get_extra_info("peername")))
+        self.transport = transport
+        self.game = EscapeRoomGame()
+        self.game.output = self.send_message
+        self.game.create_game()
+        self.game.start()
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self.agent())
+        
+    def connection_lost(self, reason=None):
+        print("Lost connection to client. Cleaning up.")
+        
+    def data_received(self, data):
+        self.deserializer.update(data)
+        for echoPacket in self.deserializer.nextPackets():
+            print("Got {} from client.".format(echoPacket.message))
+            output = self.game.command(echoPacket.message)                
+
+        if self.game.status == "escaped":
+            print("Success")
+            self.transport.close()
+
+    async def agent(self):
+        await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
+
+    def send_message(self,result):
+        print(result)
+        time.sleep(1)
+        g=GameResponsePacket()
+        iPacket = g.create_game_response_packet(result, self.game.status)
+        self.transport.write(iPacket.__serialize__())
+
+
+def main():
     loop = asyncio.get_event_loop()
-    game = EscapeRoomGame(output=flush_output)
-    game.create_game(cheat=("--cheat" in args))
-    game.start()
-    flush_output(">> ", end='')
-    loop.add_reader(sys.stdin, game_next_input, game)
-    await asyncio.wait([asyncio.ensure_future(a) for a in game.agents])
+    loop.set_debug(enabled=True)
+    from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
+    EnablePresetLogging(PRESET_DEBUG)
+
+    coro = playground.create_server(EchoServerProtocol,'localhost', 2001)  
+    server = loop.run_until_complete(coro)
+
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    server.close()
+    loop.run_until_complete(server.wait_close())
+    loop.close()
+
         
 if __name__=="__main__":
-    asyncio.ensure_future(main(sys.argv[1:]))
-    asyncio.get_event_loop().run_forever()
+    main()
