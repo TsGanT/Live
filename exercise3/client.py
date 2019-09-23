@@ -20,7 +20,7 @@ class EchoClientProtocol(asyncio.Protocol):
         self.i = 0
         self.list = ["look mirror", "get hairpin",
                      "unlock chest with hairpin", "open chest", "get hammer in chest", "hit flyingkey with hammer",
-                     "get key","unlock door with key", "open door",""]
+                     "get key","unlock door with key", "open door"]
         # loop.set_debug(enabled=True)
         # from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
         # EnablePresetLogging(PRESET_DEBUG)
@@ -45,27 +45,27 @@ class EchoClientProtocol(asyncio.Protocol):
                 flag = echoPacket.responsee.split(" ")
                 if flag[-1] == "floor" or flag[-1] == "ceiling" or flag[-1] == "wall":
                     continue
-
-                if self.i != 6:
-                    print(self.list[self.i])
-                    commond = self.list[self.i]
-                    self.send(commond)
-                    self.i =self.i + 1
-                else:
-                    if flag[1] == "hit":
-                        continue
-                    if flag[1] == "flying":
+                if self.i <= len(self.list)-1:
+                    if self.i != 6:
                         print(self.list[self.i])
                         commond = self.list[self.i]
                         self.send(commond)
-                        self.i += 1
+                        self.i =self.i + 1
                     else:
-                        self.i = self.i-1
-                        print(self.list[self.i])
-                        commond = self.list[self.i]
-                        self.send(commond)
-                        time.sleep(1)
-                        self.i = self.i+1
+                        if flag[1] == "hit":
+                            continue
+                        if flag[1] == "flying":
+                            print(self.list[self.i])
+                            commond = self.list[self.i]
+                            self.send(commond)
+                            self.i += 1
+                        else:
+                            self.i = self.i-1
+                            print(self.list[self.i])
+                            commond = self.list[self.i]
+                            self.send(commond)
+                            time.sleep(1)
+                            self.i = self.i+1
 
     def send(self, data):
         g = GameCommandPacket()
