@@ -4,7 +4,9 @@ Escape Room Core
 import random, sys, asyncio
 import playground
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import BOOL, STRING
+from autograder_ex6_packets import AutogradeTestStatus
+from escape_room_packets import GameCommandPacket
+from escape_room_packets import GameResponsePacket
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
@@ -315,14 +317,14 @@ class EscapeRoomGame:
         
         self.room, self.player = room, player
         self.command_handler = self.command_handler_class(room, player, self.output)
-        self.agents.append(self.flyingkey_agent(flyingkey))
+        self.agents.append(self.flyingkey_agent(flyinkey))
         self.status = "created"
         
     def move_flyingkey(self, flyingkey):
         locations = ["ceiling","floor","wall"]
         locations.remove(flyingkey["location"])
-        random.shuffle(locations)
-        next_location = locations.pop(0)
+        random.shuffle(locations)g
+        next_location = locations.pop(0)    
         old_location = flyingkey["location"]
         flyingkey["location"] = next_location
         flyingkey["description"] = create_flyingkey_description(flyingkey)
@@ -390,16 +392,6 @@ def flush_output(*args, **kargs):
     print(*args, **kargs)
     sys.stdout.flush()
 
-
-class EchoPacket(PacketType):
-
-    DEFINITION_IDENTIFIER = "test.EchoPacket"
-    DEFINITION_VERSION = "1.0"
-    FIELDS = [
-              ("original", BOOL),
-              ("message", STRING)
-             ]
-
 class EchoServerProtocol(asyncio.Protocol):
     """
     This is our class for the Server's protocol. It simply receives
@@ -408,6 +400,7 @@ class EchoServerProtocol(asyncio.Protocol):
     def __init__(self):
         self.deserializer = EchoPacket.Deserializer()
         self.transport = None
+        self.deserializer = PacketType.Deserializer()
         
     def connection_made(self, transport):
         print("Received a connection from {}".format(transport.get_extra_info("peername")))
@@ -425,21 +418,8 @@ class EchoServerProtocol(asyncio.Protocol):
     def data_received(self, data):
         self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
-            if echoPacket.original:
-                print("Got {} from client.".format(echoPacket.message))
-                
-                if echoPacket.message == "__QUIT__":
-                    print("Client instructed server to quit. Terminating")
-                    self.transport.close()
-                    return
-                
-                responsePacket = EchoPacket()
-                responsePacket.original = False # To prevent potentially infinte loops?牛逼
-                responsePacket.message = self.send_message(echoPacket.message)
-                
-                self.transport.write(responsePacket.__serialize__())                
-            else:
-                print("Got a packet from client not marked as 'original'. Dropping")
+            print("Got {} from client.".format(echoPacket.message))
+            output = self.game.command(echoPacket.message)                
 
         if self.game.status == "escaped":
             print("Success")
@@ -449,13 +429,15 @@ class EchoServerProtocol(asyncio.Protocol):
         await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
 
     def send_message(self,result):
-        result = result + "<EOL>\n"
         print(result)
-        return result
+        time.sleep(1)
+        g=GameResponsePacket()
+        iPacket = g.create_game_response_packet(result, self.game.status)
+        self.transport.write(iPacket.__serialize__())
 
 def main():
     loop = asyncio.get_event_loop()
-    coro = playground.create_server(EchoServerClientProtocol,'localhost', 2001)  
+    coro = playground.create_server(EchoServerProtocol,'localhost', 2001)  
     server = loop.run_until_complete(coro)
 
     try:
