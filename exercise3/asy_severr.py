@@ -323,7 +323,7 @@ class EscapeRoomGame:
     def move_flyingkey(self, flyingkey):
         locations = ["ceiling","floor","wall"]
         locations.remove(flyingkey["location"])
-        random.shuffle(locations)g
+        random.shuffle(locations)
         next_location = locations.pop(0)    
         old_location = flyingkey["location"]
         flyingkey["location"] = next_location
