@@ -317,7 +317,7 @@ class EscapeRoomGame:
         
         self.room, self.player = room, player
         self.command_handler = self.command_handler_class(room, player, self.output)
-        self.agents.append(self.flyingkey_agent(flyinkey))
+        self.agents.append(self.flyingkey_agent(flyingkey))
         self.status = "created"
         
     def move_flyingkey(self, flyingkey):
@@ -398,7 +398,6 @@ class EchoServerProtocol(asyncio.Protocol):
     an EchoProtocolMessage and sends back a response
     """
     def __init__(self):
-        self.deserializer = EchoPacket.Deserializer()
         self.transport = None
         self.deserializer = PacketType.Deserializer()
         
