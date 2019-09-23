@@ -20,7 +20,7 @@ class EchoClientProtocol(asyncio.Protocol):
         self.i = 0
         self.list = ["look mirror", "get hairpin",
                      "unlock chest with hairpin", "open chest", "get hammer in chest", "hit flyingkey with hammer",
-                     "get key", "","","","","unlock door with key", "open door",""]
+                     "get key","unlock door with key", "open door",""]
         # loop.set_debug(enabled=True)
         # from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
         # EnablePresetLogging(PRESET_DEBUG)
@@ -43,6 +43,9 @@ class EchoClientProtocol(asyncio.Protocol):
             if isinstance(echoPacket, GameResponsePacket):
                 print(echoPacket.responsee)
                 flag = echoPacket.responsee.split(" ")
+                if flag[0] == "The":
+                    continue
+
                 if self.i != 6:
                     print(self.list[self.i])
                     commond = self.list[self.i]
@@ -63,8 +66,6 @@ class EchoClientProtocol(asyncio.Protocol):
                         self.send(commond)
                         time.sleep(1)
                         self.i = self.i+1
-
-
 
     def send(self, data):
         g = GameCommandPacket()
