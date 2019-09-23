@@ -52,9 +52,9 @@ class EchoClientProtocol(asyncio.Protocol):
                     self.send(commond)
                     self.i += 1
                 else:
+                    if flag[1] == "hit":
+                        continue
                     if flag[1] == "flying":
-                        # self.send(" ")
-                        # time.sleep(1)
                         print(self.list[self.i])
                         commond = self.list[self.i]
                         self.send(commond)
