@@ -43,7 +43,7 @@ class EchoClientProtocol(asyncio.Protocol):
             if isinstance(echoPacket, GameResponsePacket):
                 print(echoPacket.responsee)
                 flag = echoPacket.responsee.split(" ")
-                if flag[0] == "The":
+                if flag[-1] == "floor" or flag[-1] == "ceiling" or flag[-1] == "wall":
                     continue
 
                 if self.i != 6:
