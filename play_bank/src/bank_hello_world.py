@@ -5,8 +5,8 @@ import playground
 import getpass, sys, os, asyncio
 
 bankconfig = OnlineBankConfig()
-bank_addr =     bankconfig.get_parameter("CLIENT", "bank_addr")
-bank_port = int(bankconfig.get_parameter("CLIENT", "bank_port"))
+bank_addr =     bankconfig.get_parameter("CLIENT", "20194.0.0.19000")
+bank_port = int(bankconfig.get_parameter("CLIENT", "777"))
 bank_stack     =     bankconfig.get_parameter("CLIENT", "stack","default")
 bank_username  =     bankconfig.get_parameter("CLIENT", "username")
 
