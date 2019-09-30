@@ -21,9 +21,9 @@ class EchoClientProtocol(asyncio.Protocol):
         self.list = ["look mirror", "get hairpin",
                      "unlock chest with hairpin", "open chest", "get hammer in chest", "hit flyingkey with hammer",
                      "get key","unlock door with key", "open door"]
-        # loop.set_debug(enabled=True)
-        # from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
-        # EnablePresetLogging(PRESET_DEBUG)
+        loop.set_debug(enabled=True)
+        from playground.common.logging import EnablePresetLogging, PRESET_DEBUG
+        EnablePresetLogging(PRESET_DEBUG)
 
     def connection_made(self, transport):
         self.transport = transport
