@@ -81,7 +81,7 @@ class EchoClientProtocol(asyncio.Protocol):
         result = await paymentInit("stang_47", account, amount, unique_id)
         print(result)
         receipt, receipt_sig = result
-        game_packet = create_game_charge_packet(receipt, receipt_sig)
+        game_packet = create_game_pay_packet(receipt, receipt_sig)
         self.transport.write(game_packet.__serialize__())
     
     def connection_lost(self, exc):

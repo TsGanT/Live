@@ -1,5 +1,5 @@
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import BOOL, STRING, UINT32
+from playground.network.packet.fieldtypes import BOOL, STRING, UINT32, BUFFER
 
 class GameCommandPacket(PacketType):
     DEFINITION_IDENTIFIER = "client.GameCommandPacket"
@@ -38,51 +38,53 @@ class GameResponsePacket(PacketType):
     def response(self):
         return self.responsee
 
-class PlayerPacket(PacketType):
-    DEFINITION_IDENTIFIER = "client.PlayerPacket"
+class GameInitRequestPacket(PacketType):
+    DEFINITION_IDENTIFIER = "20194.exercise7.gameinit"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        ("playername", STRING)
+        ("username_string", STRING),
     ]
 
-class GameChargeRequestPacket(PacketType):
-    DEFINITION_IDENTIFIER = "client.GameChargeRequestPacket"
+class GamePaymentRequestPacket(PacketType):
+    DEFINITION_IDENTIFIER = "20194.exercise7.gamepaymentrequest"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
         ("unique_id", STRING),
         ("account", STRING),
-        ("ammount", UINT32),
-        ]
+        ("amount", UINT32)
+    ]
 
-class GameChargeResponsePacket(PacketType):
-    DEFINITION_IDENTIFIER = "server.GameChargeResponsePacket"
+
+class GamePaymentResponsePacket(PacketType):
+    DEFINITION_IDENTIFIER = "20194.exercise7.gamepaymentresponse"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        ("receipt", STRING),
-        ("receipt_sig", STRING)
+        ("receipt", BUFFER),
+        ("receipt_sig", BUFFER),
     ]
 
-def create_player_packet(username):
-    return PlayerPacket(playername = username)
+
+def create_game_init_packet(username):
+    return GameInitRequestPacket(username_string=username)
 
 
 def process_game_init(pkt):
     return "stang47"
 
 
-def create_game_require_charge_packet(unique_id, account, amount):
-    return GameChargeRequestPacket(unique_id=unique_id, account=account, amount=amount)
+def create_game_require_pay_packet(unique_id, account, amount):
+    return GamePaymentRequestPacket(unique_id=unique_id, account=account, amount=amount)
 
 
-def process_game_require_charge_packet(pkt):
+def process_game_require_pay_packet(pkt):
     return pkt.unique_id, pkt.account, pkt.amount
 
 
-def create_game_charge_packet(receipt, receipt_signature):
-    return GameChargeResponsePacket(receipt=receipt, receipt_sig=receipt_signature)
+def create_game_pay_packet(receipt, receipt_signature):
+    return GamePaymentResponsePacket(receipt=receipt, receipt_sig=receipt_signature)
 
 
 def process_game_pay_packet(pkt):
