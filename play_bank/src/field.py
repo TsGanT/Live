@@ -43,7 +43,7 @@ class PlayerPacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        "playername", STRING
+        ("playername", STRING)
     ]
 
 class GameChargeRequestPacket(PacketType):
@@ -51,18 +51,18 @@ class GameChargeRequestPacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        "uniqueID", STRING
-        "account", STRING
-        "ammount", UINT32
-    ]
+        ("uniqueID", STRING),
+        ("account", STRING),
+        ("ammount", UINT32),
+        ]
 
 class GameChaegeResponsePacket(PacketType):
     DEFINITION_IDENTIFIER = "server.GameChargeResponsePacket"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        "receipt", STRING
-        "receipt_sig", STRING
+        ("receipt", STRING)
+        ("receipt_sig", STRING)
     ]
 
 def create_player_packet(username):
