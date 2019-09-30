@@ -61,7 +61,7 @@ class GameChaegeResponsePacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        ("receipt", STRING)
+        ("receipt", STRING),
         ("receipt_sig", STRING)
     ]
 
