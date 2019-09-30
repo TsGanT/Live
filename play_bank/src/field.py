@@ -56,7 +56,7 @@ class GameChargeRequestPacket(PacketType):
         ("ammount", UINT32),
         ]
 
-class GameChaegeResponsePacket(PacketType):
+class GameChargeResponsePacket(PacketType):
     DEFINITION_IDENTIFIER = "server.GameChargeResponsePacket"
     DEFINITION_VERSION = "1.0"
 
