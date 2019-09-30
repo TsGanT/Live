@@ -34,6 +34,9 @@ class EchoClientProtocol(asyncio.Protocol):
             packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
 
+        self.command_packet = GameCommandPacket.create_game_command_packet("Submit")
+        self.transport.write(self.command_packet.__serialize__())
+
     def data_received(self, data):
         self.deserializer.update(data)
         for echoPacket in self.deserializer.nextPackets():
