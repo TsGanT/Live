@@ -5,8 +5,8 @@ import time
 import playground
 from autograder_ex6_packets import AutogradeStartTest
 from autograder_ex6_packets import AutogradeTestStatus
-from field import GameCommandPacket
-from field import GameResponsePacket
+from field import *
+from bank_hello_world import *
 
 
 class EchoClientProtocol(asyncio.Protocol):
@@ -73,15 +73,25 @@ class EchoClientProtocol(asyncio.Protocol):
         g = GameCommandPacket()
         ePacket = g.create_game_command_packet(data)
         self.transport.write(ePacket.__serialize__())
+    
+    async def CreatePayment(self, account, amount, unique_id):
+        result = await paymentInit("stang_47", account, amount, unique_id)
+        print(result)
+        receipt, receipt_sig = result
+        game_packet = create_game_charge_packet(receipt, receipt_sig)
+        self.transport.write(game_packet.__serialize__())
+    
+    def connection_lost(self, exc):
+        print('The server closed the connection')
+        print('Stop the event loop')
+        self.loop.stop()
 
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
 	coro = playground.create_connection(
-	    EchoClientProtocol, '20194.0.0.19000', 19006)
+	EchoClientProtocol, '20194.0.0.19000', 19007)
 	client = loop.run_until_complete(coro)
-
-
 	try:
 		loop.run_forever()
 	except KeyboardInterrupt:

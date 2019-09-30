@@ -5,10 +5,11 @@ import playground
 import getpass, sys, os, asyncio
 
 bankconfig = OnlineBankConfig()
-bank_addr =     bankconfig.get_parameter("CLIENT", "20194.0.0.19000")
+bank_addr =     "20194.0.0.19000"
 bank_port = 777#int(bankconfig.get_parameter("CLIENT", "777"))
-bank_stack     =     bankconfig.get_parameter("CLIENT", "stack","default")
-bank_username  =     bankconfig.get_parameter("CLIENT", "username")
+bank_stack     =     "default"
+bank_username  =     "stang47"
+certPath = "/home/20194NetworkSecurity/certs/20194_online_bank.cert"
 
 certPath = os.path.join(bankconfig.path(), "bank.cert")
 bank_cert = loadCertFromFile(certPath)
@@ -55,8 +56,8 @@ def example_verify(bank_client, receipt_bytes, signature_bytes, dst, amount, mem
         raise Exception("Invalid memo. Expected {} got {}".format(memo, ledger_line.memo()))
     return True
     
-if __name__=="__main__":
-    src, dst, amount, memo = sys.argv[1:5]
+async def paymentInit(src, dst, amount, memo):
+    #src, dst, amount, memo = sys.argv[1:5]
     amount = int(amount)
     username = bank_username # could override at the command line
     password = getpass.getpass("Enter password for {}: ".format(username))
