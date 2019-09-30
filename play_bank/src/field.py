@@ -51,7 +51,7 @@ class GameChargeRequestPacket(PacketType):
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
-        ("uniqueID", STRING),
+        ("unique_id", STRING),
         ("account", STRING),
         ("ammount", UINT32),
         ]
