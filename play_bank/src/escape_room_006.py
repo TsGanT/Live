@@ -392,23 +392,40 @@ class EchoServerProtocol(asyncio.Protocol):
         
     def data_received(self, data):
         self.deserializer.update(data)
-        for echoPacket in self.deserializer.nextPackets():
-            print("Got {} from client.".format(echoPacket.message))
-            output = self.game.command(echoPacket.message)                
+        for serverPacket in self.deserializer.nextPackets():
+            if isinstance(serverPacket, GameInitRequestPacket):
+                username = process_game_init(serverPacket)
+                print(username)
+                game_packet = create_game_require_pay_packet('1234567862762266273', "stang47_account", 6)
+                self.transport.write(game_packet.__serialize__())
 
-        if self.game.status == "escaped":
-            print("Success")
-            self.transport.close()
+            if isinstance(serverPacket, GameCommandPacket):
+                print(serverPacket.command_line)
+                self.game.command(serverPacket.command_line)
+
+            if isinstance(serverPacket, GamePaymentResponsePacket):
+                receipt, receipt_sig = process_game_pay_packet(serverPacket)
+                print(receipt)
+                print(receipt_sig)
+
+                def send_message(result):
+                    print(result)
+                    time.sleep(0.5)
+                    res_temp = create_game_response(result, self.game.status)
+                    self.transport.write(res_temp.__serialize__())
+                
+                self.game = EscapeRoomGame(output=send_message)
+                self.game.create_game()
+                self.game.start()
+                self.loop.create_task(self.agent())
+        # for echoPacket in self.deserializer.nextPackets():
+        #     print("Got {} from client.".format(echoPacket.message))
+        #     output = self.game.command(echoPacket.message)                
+
+
 
     async def agent(self):
         await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
-
-    def send_message(self,result):
-        print(result)
-        time.sleep(1)
-        g=GameResponsePacket()
-        iPacket = g.create_game_response_packet(result, self.game.status)
-        self.transport.write(iPacket.__serialize__())
 
 
 def main():
