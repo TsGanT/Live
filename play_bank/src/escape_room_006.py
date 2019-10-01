@@ -374,21 +374,11 @@ class EchoServerProtocol(asyncio.Protocol):
     an EchoProtocolMessage and sends back a response
     """
     def __init__(self):
-        self.transport = None
+        self.loop = asyncio.get_event_loop()
         self.deserializer = PacketType.Deserializer()
         
     def connection_made(self, transport):
-        print("Received a connection from {}".format(transport.get_extra_info("peername")))
         self.transport = transport
-        self.game = EscapeRoomGame()
-        self.game.output = self.send_message
-        self.game.create_game()
-        self.game.start()
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self.agent())
-        
-    def connection_lost(self, reason=None):
-        print("Lost connection to client. Cleaning up.")
         
     def data_received(self, data):
         self.deserializer.update(data)
