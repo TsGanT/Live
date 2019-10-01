@@ -16,6 +16,7 @@ class EchoClientProtocol(asyncio.Protocol):
     """
 
     def __init__(self):
+        self.loop = asyncio.get_event_loop()
         self.deserializer = PacketType.Deserializer()
         self.i = 0
         self.list = ["look mirror", "get hairpin",
@@ -27,7 +28,6 @@ class EchoClientProtocol(asyncio.Protocol):
 
     def connection_made(self, transport):
         self.transport = transport
-        self.loop = asyncio.get_event_loop()
         print("Connected to {}".format(transport.get_extra_info("peername")))
         packet1 = AutogradeStartTest(name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
         with open("field.py", "rb") as f:
