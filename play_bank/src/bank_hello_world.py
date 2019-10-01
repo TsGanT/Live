@@ -9,7 +9,7 @@ bank_addr =     "20194.0.0.19000"
 bank_port = 777#int(bankconfig.get_parameter("CLIENT", "777"))
 bank_stack     =     "default"
 bank_username  =     "stang47"
-certPath = "/home/Shi_Tang/Live/play_bank/src/20194_online_bank.cert"
+certPath = "/home/student_20194/Shi_Tang/Live/play_bank/src/20194_online_bank.cert"
 
 #/Shi_Tang/Live/play_bank/src
 
