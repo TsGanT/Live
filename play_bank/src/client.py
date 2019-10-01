@@ -27,9 +27,9 @@ class EchoClientProtocol(asyncio.Protocol):
 
     def connection_made(self, transport):
         self.transport = transport
+        self.loop = asyncio.get_event_loop()
         print("Connected to {}".format(transport.get_extra_info("peername")))
-        packet1 = AutogradeStartTest(
-            name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
+        packet1 = AutogradeStartTest(name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
         with open("field.py", "rb") as f:
             packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
@@ -99,8 +99,7 @@ class EchoClientProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = playground.create_connection(
-	EchoClientProtocol, '20194.0.0.19000', 19007)
+	coro = playground.create_connection(EchoClientProtocol, '20194.0.0.19000', 19007)
 	client = loop.run_until_complete(coro)
 	try:
 		loop.run_forever()
