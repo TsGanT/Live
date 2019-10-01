@@ -86,7 +86,8 @@ class EchoClientProtocol(asyncio.Protocol):
     
     async def CreatePayment(self, account, amount, unique_id):
         result = await paymentInit("stang47_account", account, amount, unique_id)
-        #print(result)
+
+        print(result)
         receipt, receipt_sig = result
         game_packet = create_game_pay_packet(receipt, receipt_sig)
         self.transport.write(game_packet.__serialize__())
