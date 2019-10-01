@@ -59,14 +59,11 @@ def example_verify(bank_client, receipt_bytes, signature_bytes, dst, amount, mem
     return True
     
 async def paymentInit(src, dst, amount, memo):
-    #src, dst, amount, memo = sys.argv[1:5]
     amount = int(amount)
-    username = bank_username # could override at the command line
+    username = bank_username  # could override at the command line
     password = getpass.getpass("Enter password for {}: ".format(username))
-    bank_client = BankClientProtocol(bank_cert, username, password) 
-    loop = asyncio.get_event_loop()
-    result = loop.run_until_complete(
-        example_transfer(bank_client, src, dst, amount, memo))
+    bank_client = BankClientProtocol(bank_cert, username, password)
+    result = await example_transfer(bank_client, src, dst, amount, memo)
     if result:
         example_verify(bank_client, result.Receipt, result.ReceiptSignature, dst, amount, memo)
         print("Receipt verified.")
