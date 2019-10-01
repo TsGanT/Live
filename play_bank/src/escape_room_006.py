@@ -5,8 +5,8 @@ import random, sys, asyncio, time
 import playground
 from playground.network.packet import PacketType
 from autograder_ex6_packets import AutogradeTestStatus
-from field import GameCommandPacket
-from field import GameResponsePacket
+from field import *
+from bank_hello_world import *
 
 def create_container_contents(*escape_room_objects):
     return {obj.name: obj for obj in escape_room_objects}
