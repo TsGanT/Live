@@ -87,7 +87,7 @@ def create_game_response(response, status):
     return GameResponsePacket(responsee=response, statuss=status)
 
 def process_game_response(pkt):
-    return pkt.res, pkt.sta
+    return pkt.responsee, pkt.statuss
 
 def create_game_command(command):
     return GameCommandPacket(message=command)
