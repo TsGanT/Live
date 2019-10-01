@@ -12,8 +12,6 @@ bank_username  =     "stang47"
 certPath = "/home/student_20194/Shi_Tang/Live/play_bank/src/20194_online_bank.cert"
 
 #/Shi_Tang/Live/play_bank/src
-
-certPath = os.path.join(bankconfig.path(), "bank.cert")
 bank_cert = loadCertFromFile(certPath)
 
 
