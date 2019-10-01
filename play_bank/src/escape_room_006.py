@@ -390,8 +390,8 @@ class EchoServerProtocol(asyncio.Protocol):
                 self.transport.write(game_packet.__serialize__())
 
             if isinstance(serverPacket, GameCommandPacket):
-                print(serverPacket.command_line)
-                self.game.command(serverPacket.command_line)
+                print(serverPacket.message)
+                self.game.command(serverPacket.message)
 
             if isinstance(serverPacket, GamePaymentResponsePacket):
                 receipt, receipt_sig = process_game_pay_packet(serverPacket)
