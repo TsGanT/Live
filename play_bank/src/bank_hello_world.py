@@ -68,3 +68,4 @@ async def paymentInit(src, dst, amount, memo):
     if result:
         example_verify(bank_client, result.Receipt, result.ReceiptSignature, dst, amount, memo)
         print("Receipt verified.")
+        return result.Receipt, result.ReceiptSignature
