@@ -44,6 +44,13 @@ class EchoClientProtocol(asyncio.Protocol):
                 print(echoPacket.client_status)
                 print(echoPacket.server_status)
                 print(echoPacket.error)
+            
+            if isinstance(clientPacket, GamePaymentRequestPacket):
+                unique_id, account, amount = process_game_require_pay_packet(clientPacket)
+                print(unique_id)
+                print(account)
+                print(amount)
+                self.loop.create_task(self.CreatePayment(account, amount, unique_id))
 
             if isinstance(echoPacket, GameResponsePacket):
                 print(echoPacket.responsee)
