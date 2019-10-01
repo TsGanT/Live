@@ -39,7 +39,7 @@ class GameResponsePacket(PacketType):
         return self.responsee
 
 class GameInitRequestPacket(PacketType):
-    DEFINITION_IDENTIFIER = "20194.exercise7.gameinit"
+    DEFINITION_IDENTIFIER = "client.GameInitRequestPacket"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
@@ -47,7 +47,7 @@ class GameInitRequestPacket(PacketType):
     ]
 
 class GamePaymentRequestPacket(PacketType):
-    DEFINITION_IDENTIFIER = "20194.exercise7.gamepaymentrequest"
+    DEFINITION_IDENTIFIER = "server.GamePaymentRequestPacket"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
@@ -58,7 +58,7 @@ class GamePaymentRequestPacket(PacketType):
 
 
 class GamePaymentResponsePacket(PacketType):
-    DEFINITION_IDENTIFIER = "20194.exercise7.gamepaymentresponse"
+    DEFINITION_IDENTIFIER = "server.GamePaymentResponsePacket"
     DEFINITION_VERSION = "1.0"
 
     FIELDS = [
