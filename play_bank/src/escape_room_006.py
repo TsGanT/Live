@@ -5,7 +5,7 @@ import random, sys, asyncio, time
 import playground
 from playground.network.packet import PacketType
 from autograder_ex6_packets import AutogradeTestStatus
-from field import *
+from newpacket import *
 from bank_hello_world import *
 
 def create_container_contents(*escape_room_objects):
@@ -383,7 +383,7 @@ class EchoServerProtocol(asyncio.Protocol):
     def data_received(self, data):
         self.deserializer.update(data)
         for serverPacket in self.deserializer.nextPackets():
-            if isinstance(serverPacket, GameInitRequestPacket):
+            if isinstance(serverPacket, GameInitPacket):
                 username = process_game_init(serverPacket)
                 print(username)
                 game_packet = create_game_require_pay_packet('1234567862762266273', "stang47_account", 6)
@@ -393,7 +393,7 @@ class EchoServerProtocol(asyncio.Protocol):
                 print(serverPacket.message)
                 self.game.command(serverPacket.message)
 
-            if isinstance(serverPacket, GamePaymentResponsePacket):
+            if isinstance(serverPacket, GamePayPacket):
                 receipt, receipt_sig = process_game_pay_packet(serverPacket)
                 print(receipt)
                 print(receipt_sig)
