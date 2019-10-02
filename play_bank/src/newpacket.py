@@ -50,7 +50,7 @@ def create_game_init_packet(username):
     return GameInitPacket(username = username)
 
 def process_game_init(pkt):
-    return "stang47"
+    return pkt.username
 
 def create_game_require_pay_packet(unique_id, account, amount):
     return GameRequirePayPacket(unique_id=unique_id, account=account, amount=amount)

@@ -32,8 +32,8 @@ class EchoClientProtocol(asyncio.Protocol):
         packet1 = AutogradeStartTest(name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
         self.transport.write(packet1.__serialize__())
 
-        self.command_packet = create_game_command("Submit")
-        self.transport.write(self.command_packet.__serialize__())
+        init_packet = create_game_init_packet("stang47")
+        self.transport.write(init_packet.__serialize__())
 
     def data_received(self, data):
         self.deserializer.update(data)
