@@ -4,7 +4,7 @@ from playground.network.packet.fieldtypes import BOOL, STRING, UINT8, BUFFER
 class GameInitPacket(PacketType):
     DEFINITION_IDENTIFIER = "initpacket"
     DEFINITION_VERSION = "1.0"
-​
+
     FIELDS = [
         ("username", STRING)
     ]
