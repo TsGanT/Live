@@ -1,11 +1,11 @@
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import UINT32, STRING, BUFFER, BOOL
+from playground.network.packet.fieldtypes import UINT8, STRING, BUFFER, BOOL
 import asyncio
 import time
 import playground
 from autograder_ex6_packets import AutogradeStartTest
 from autograder_ex6_packets import AutogradeTestStatus
-from field import *
+from newpacket import *
 from bank_hello_world import *
 
 
@@ -30,11 +30,9 @@ class EchoClientProtocol(asyncio.Protocol):
         self.transport = transport
         print("Connected to {}".format(transport.get_extra_info("peername")))
         packet1 = AutogradeStartTest(name="Shi Tang", email="stang47@jhu.edu", team=4, port=2001)
-        with open("field.py", "rb") as f:
-            packet1.packet_file = f.read()
         self.transport.write(packet1.__serialize__())
 
-        self.command_packet = GameCommandPacket.create_game_command_packet("Submit")
+        self.command_packet = create_game_command("Submit")
         self.transport.write(self.command_packet.__serialize__())
 
     def data_received(self, data):
@@ -45,7 +43,7 @@ class EchoClientProtocol(asyncio.Protocol):
                 print(echoPacket.server_status)
                 print(echoPacket.error)
             
-            if isinstance(echoPacket, GamePaymentRequestPacket):
+            if isinstance(echoPacket, GameRequirePayPacket):
                 unique_id, account, amount = process_game_require_pay_packet(echoPacket)
                 print(unique_id)
                 print(account)
@@ -53,8 +51,8 @@ class EchoClientProtocol(asyncio.Protocol):
                 self.loop.create_task(self.CreatePayment(account, amount, unique_id))
 
             if isinstance(echoPacket, GameResponsePacket):
-                print(echoPacket.responsee)
-                flag = echoPacket.responsee.split(" ")
+                print(echoPacket.response)
+                flag = echoPacket.response.split(" ")
                 if flag[-1] == "floor" or flag[-1] == "ceiling" or flag[-1] == "wall":
                     continue
                 if self.i <= len(self.list)-1:
@@ -80,8 +78,7 @@ class EchoClientProtocol(asyncio.Protocol):
                             self.i = self.i+1
 
     def send(self, data):
-        g = GameCommandPacket()
-        ePacket = g.create_game_command_packet(data)
+        ePacket = create_game_command(data)
         self.transport.write(ePacket.__serialize__())
     
     async def CreatePayment(self, account, amount, unique_id):
@@ -100,7 +97,7 @@ class EchoClientProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
 	loop = asyncio.get_event_loop()
-	coro = playground.create_connection(EchoClientProtocol, '20194.0.0.19000', 19007)
+	coro = playground.create_connection(EchoClientProtocol, '20194.0.0.19000', 19008)
 	client = loop.run_until_complete(coro)
 	try:
 		loop.run_forever()

@@ -11,7 +11,7 @@ class AutogradeStartTest(PacketType):
         ("team", UINT8),
         ("email", STRING),
         ("port", UINT16),
-        ("packet_file", BUFFER)]
+        ]
         
 class AutogradeTestStatus(PacketType):
     DEFINITION_IDENTIFIER = "20194.exercise6.autogradesubmitresponse"

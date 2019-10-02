@@ -13,8 +13,8 @@ class GameCommandPacket(PacketType):
     def create_game_command_packet(cls, s):
         return cls(message = s )
     
-    def command(self):
-        return self.message
+    def command(self):              #每一个包都应该有两个方法，一个是建立自己的包，另一个是可以被调用
+        return self.message         #用来调用包中的field的函数
     
 class GameResponsePacket(PacketType):
     DEFINITION_IDENTIFIER = "server.GameResponsePacket"
