@@ -8,40 +8,39 @@ class GameInitPacket(PacketType):
     FIELDS = [
         ("username", STRING)
     ]
-​
-​
+
 class GameRequirePayPacket(PacketType):
     DEFINITION_IDENTIFIER = "requirepaypacket"
     DEFINITION_VERSION = "1.0"
-​
+
     FIELDS = [
         ("unique_id", STRING),
         ("account", STRING),
         ("amount", UINT8)
     ]
-​
+
 class GamePayPacket(PacketType):
     DEFINITION_IDENTIFIER = "paypacket"
     DEFINITION_VERSION = "1.0"
-​
+
     FIELDS = [
         ("receipt", BUFFER),
         ("receipt_signature", BUFFER)
     ]
-​
+
 class GameCommandPacket(PacketType):
     DEFINITION_IDENTIFIER = "commandpacket"
     DEFINITION_VERSION = "1.0"
-​
+
     FIELDS = [
         ("command", STRING)
     ]
-​
+
 class GameResponsePacket(PacketType):
     DEFINITION_IDENTIFIER = "responsepacket" 
     DEFINITION_VERSION = "1.0"
-​
-​
+
+
     FIELDS = [
         ("response", STRING),
         ("status", STRING),
