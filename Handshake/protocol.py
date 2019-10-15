@@ -3,6 +3,7 @@ from playground.network.packet import PacketType
 from playground.network.packet.fieldtypes import STRING, UINT8, BUFFER, UINT16, BOOL
 import logging
 from playground.network.packet.fieldtypes.attributes import Optional
+import random
 
 logger = logging.getLogger("playground.__connector__." + __name__)
 
@@ -35,7 +36,7 @@ class PassthroughProtocol(StackingProtocol):
         # its SYN anything between 0 and 254 and its ACK any random value between 1 and 254.
         if self._mode == "client":
             # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
-            self.SYN = 0  # random value between 0 and 254
+            self.SYN = random(0,255)  # random value between 0 and 254
             packet.SYN = self.SYN
             packet.status = 0
             # packet.ACK = 1  # should be modified to random number 1~255
