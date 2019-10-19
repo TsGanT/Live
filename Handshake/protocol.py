@@ -7,7 +7,8 @@ import random
 
 logger = logging.getLogger("playground.__connector__." + __name__)
 
-
+a = random.randint(0,254)
+print(a)
 class HandshakePacket(PacketType):
     DEFINITION_IDENTIFIER = "handshakepacket"
     DEFINITION_VERSION = "1.0"
@@ -36,11 +37,18 @@ class PassthroughProtocol(StackingProtocol):
         # its SYN anything between 0 and 254 and its ACK any random value between 1 and 254.
         if self._mode == "client":
             # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
-            self.SYN = random(0,255)  # random value between 0 and 254
+            self.SYN = a
             packet.SYN = self.SYN
             packet.status = 0
             # packet.ACK = 1  # should be modified to random number 1~255
             transport.write(packet.__serialize__())
+        
+        if self._mode == "server":
+            # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
+            self.SYN = a
+            packet.SYN = self.SYN
+            packet.status = 0
+
 
     def data_received(self, buffer):
         logger.debug("{} passthrough received a buffer of size {}".format(self._mode, len(buffer)))
@@ -49,7 +57,7 @@ class PassthroughProtocol(StackingProtocol):
             self.buffer = HandshakePacket.Deserializer()
             self.buffer.update(buffer)
         else:
-            self.buffer = PacketType.Deserializer()
+            self.buffer = PacketType.Deserializer()#当flag=1时，就已经是正常的包了
             self.buffer.update(buffer)
 
         for packet in self.buffer.nextPackets():
@@ -62,7 +70,7 @@ class PassthroughProtocol(StackingProtocol):
                     new_packet.ACK = 0
                     new_packet.status = 1
                     self.transport.write(new_packet.__serialize__())
-                elif packet.ACK == 1:
+                elif packet.ACK == 1 and packet.SYN == self.syn +2:
                     # Upon receiving the SUCCESS packet, the server checks if ACK is 1. If success, the server
                     # acknowledges this connection. Else, the server sends back a packet to the client with status
                     # ERROR.
