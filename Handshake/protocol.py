@@ -37,7 +37,8 @@ class PassthroughProtocol(StackingProtocol):
         # its SYN anything between 0 and 254 and its ACK any random value between 1 and 254.
         if self._mode == "client":
             # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
-            self.SYN = a
+            x = random.randint(0, 2**32)
+            self.SYN = x
             packet.SYN = self.SYN
             packet.status = 0
             # packet.ACK = 1  # should be modified to random number 1~255
@@ -45,7 +46,8 @@ class PassthroughProtocol(StackingProtocol):
         
         if self._mode == "server":
             # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
-            self.SYN = a
+            y = random.randint(0, 2**32)
+            self.SYN = y
             packet.SYN = self.SYN
             packet.status = 0
 
@@ -66,11 +68,11 @@ class PassthroughProtocol(StackingProtocol):
                 if packet.status == 0:
                     # Upon receiving packet, the server sends back a packet with SYN+1, ACK set to 0 and status SUCCESS.
                     new_packet = HandshakePacket()
-                    new_packet.SYN = packet.SYN + 1
-                    new_packet.ACK = 0
+                    new_packet.SYN = self.SYN
+                    new_packet.ACK = (packet.SYN + 1) % 2**32
                     new_packet.status = 1
                     self.transport.write(new_packet.__serialize__())
-                elif packet.ACK == 1 and packet.SYN == self.syn +2:
+                elif packet.ACK == (self.SYN+1) % 2**32:
                     # Upon receiving the SUCCESS packet, the server checks if ACK is 1. If success, the server
                     # acknowledges this connection. Else, the server sends back a packet to the client with status
                     # ERROR.
@@ -86,10 +88,10 @@ class PassthroughProtocol(StackingProtocol):
                 # Upon receiving the SUCCESS packet, the client checks if new SYN is old SYN + 1. If it is correct,
                 # the client sends back to server a packet with ACK set to 1 and status SUCCESS and acknowledge this
                 # connection with server. Else, the client sends back to server a packet with status set to ERROR.
-                if packet.SYN == self.SYN + 1:
+                if packet.ACK == (self.SYN + 1) % 2**32:
                     new_packet = HandshakePacket()
-                    new_packet.SYN = packet.SYN + 1
-                    new_packet.ACK = 1
+                    new_packet.SYN = (packet.ACK + 1) % 2**32
+                    new_packet.ACK = (packet.SYN+1) % 2**32
                     new_packet.status = 1
                     self.flag = 1
                     self.transport.write(new_packet.__serialize__())
