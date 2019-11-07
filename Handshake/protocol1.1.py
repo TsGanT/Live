@@ -32,8 +32,7 @@ class DataPacket(PoopPacketType):
 class ResendPacket(DataPacket):
     DEFINITION_IDENTIFIER = "poop.resendpacket"
     DEFINITION_VERSION = "1.0"
-    TIMESTAMP = 0
-
+    TIMESTAMP = 0       #resend_packet中才有timestamp
 
 class HandshakePacket(PoopPacketType):      #这个地方就不需要start那个packet了，因为这个packet的内容就包括了start中需要的内容
     DEFINITION_IDENTIFIER = "poop.handshakepacket"
@@ -48,6 +47,7 @@ class HandshakePacket(PoopPacketType):      #这个地方就不需要start那个
         ("SYN", UINT32({Optional: True})),
         ("ACK", UINT32({Optional: True})),
         ("error", STRING({Optional: True})),
+        ("hash", UINT32),
     ]
 
 class ShutdownPacket(PoopPacketType):
@@ -116,11 +116,13 @@ class POOPProtocol(StackingProtocol):
         # At initialization, the client will set its SYN to be any random value between 0 and 2^32, server will set
         # its SYN anything between 0 and 2^32 and its ACK any random value between 0 and 2^32
         if self._mode == "client":
-            packet = StartupPacket()#还没有改？
+            packet = HandshakePacket()#还没有改？
             # The client needs to send a packet with SYN and status NOT STARTED to the server to request a connection.
             self.CSYN = random.randint(0, 2 ** 32)  # random value between 0 and 2**32
             packet.SYN = self.CSYN
             packet.status = 0  # the status should be "NOT_STARTED" at the beginning
+            packet.hash = binascii.crc32(packet.__serialize__()) & 0xffffffff   #count the hash value of the packet
+
             transport.write(packet.__serialize__())     #发起第一次握手
 
             # mark down the time
@@ -132,9 +134,9 @@ class POOPProtocol(StackingProtocol):
 
         for packet in self.deserializer.nextPackets():
             print(packet)
-            if packet.DEFINITION_IDENTIFIER == "poop.startuppacket":
+            if packet.DEFINITION_IDENTIFIER == "poop.handshakepacket":
                 self.handshake_recv(packet)
-            elif packet.DEFINITION_IDENTIFIER == "poop.datapacket":
+            elif packet.DEFINITION_IDENTIFIER == "poop.datapacket": #现在的问题是我想知道data是如何resend的
                 self.datapacket_recv(packet)
             elif packet.DEFINITION_IDENTIFIER == "poop.shutdownpacket":     #Half open?
                 if self.handshake_flag == 1:
@@ -153,40 +155,45 @@ class POOPProtocol(StackingProtocol):
         self.last_handshake_time = time.time()
         logger.debug("{} received a handshake packet".format(self._mode))
         if self._mode == "server":
+            if binascii.crc32(packet.__serialize__()) & 0xffffffff != packet.hash:
+                logger.debug("The hash doesn't match. Try to reconnect")
+                return
+
             if packet.status == 0:
                 if packet.SYN:
                     # Upon receiving packet, the server sends back a packet with random number from 0 to 2^32,
                     # ACK set to (SYN+1)%(2^32)and status SUCCESS.
-                    new_packet = StartupPacket()
+                    new_packet = HandshakePacket()
                     # get a random ACK and assign the value to SYN
                     self.SSYN = random.randint(0, 2 ** 32)
                     new_packet.SYN = self.SSYN
                     # make the ack + 1
                     new_packet.ACK = (packet.SYN + 1) % (2 ** 32)
                     new_packet.status = 1
+                    new_packet.hash = binascii.crc32(new_packet.__serialize__()) & 0xffffffff   #count the hash value of the packet
                     self.transport.write(new_packet.__serialize__())    #收到来自client的第一次握手，然后由server开始发起第二次握手
                 else:       #根据要求是要改的
-                    new_packet = StartupPacket()
+                    new_packet = HandshakePacket()
                     new_packet.status = 2
                     new_packet.error = "No SYN received!"
                     self.transport.write(new_packet.__serialize__())
 
-            elif packet.ACK == (self.SSYN + 1) % (2 ** 32):
+            elif packet.ACK == (self.SSYN + 1) % (2 ** 32):     #也就是说所谓的三次握手其实传输4次
                 # Upon receiving the SUCCESS packet, the server checks if ACK is old ACK plus 1. If success, the server
                 # acknowledges this connection. Else, the server sends back a packet to the client with status
                 # ERROR.
                 # All agents set the sequence number on the first packet they send to be the random value
                 # they generated during the course of the Handshake Protocol.
-                self.next_seq_send = self.SSYN
+                self.next_seq_send = self.SSYN  #SSYN
                 self.last_data_time = time.time()
-                self.next_expected_ack = self.SSYN
-                self.next_seq_recv = packet.SYN - 1
+                self.next_expected_ack = self.SSYN  #SSYN
+                self.next_seq_recv = packet.SYN - 1 #next_seq_recv = CSYN + 1
                 self.handshake_flag = 1
-                self.higherProtocol().connection_made(self.higher_transport)
+                self.higherProtocol().connection_made(self.higher_transport)        #链接好之后把higher_transport给到上一层
                 logger.debug("Server Poop handshake success!")
 
             else:
-                new_packet = StartupPacket()
+                new_packet = HandshakePacket()
                 new_packet.status = 2
                 # new_packet.ACK = packet.SYN
                 new_packet.error = "The ACK doesn't match! Server Connection Lost!"
@@ -196,24 +203,27 @@ class POOPProtocol(StackingProtocol):
             # Upon receiving the SUCCESS packet, the client checks if new ACK is old SYN + 1. If it is correct,
             # the client sends back to server a packet with ACK set to (ACK+1)%(2^32)  and status SUCCESS and acknowledge this
             # connection with server. Else, the client sends back to server a packet with status set to ERROR.
+            if binascii.crc32(packet.__serialize__()) & 0xffffffff != packet.hash:
+                logger.debug("The hash doesn't match. Try to reconnect")
+                return
             if packet.ACK == (self.CSYN + 1) % (2 ** 32):
-                new_packet = StartupPacket()
-                new_packet.SYN = (packet.ACK + 1) % (2 ** 32)
-                new_packet.ACK = (packet.SYN + 1) % (2 ** 32)
+                new_packet = HandshakePacket()
+                new_packet.SYN = (packet.ACK + 1) % (2 ** 32)   #SYN = CSYN + 2
+                new_packet.ACK = (packet.SYN + 1) % (2 ** 32)   #ACK  = SSYN + 1
                 new_packet.status = 1
                 self.transport.write(new_packet.__serialize__())
                 # All agents set the sequence number on the first packet they send to be the random value
                 # they generated during the course of the Handshake Protocol.
                 self.next_seq_send = self.CSYN
-                self.last_data_time = time.time()
-                self.next_expected_ack = self.CSYN
-                self.next_seq_recv = packet.SYN - 1
+                self.next_expected_ack = self.CSYN  #我下一个想要发出去的和我下一个想要收到的当然是一样的，但是这个初始化没有用啊！！！！！
+                self.last_data_time = time.time()   #reset the timeout
+                self.next_seq_recv = packet.SYN - 1 #SSYN-1
                 self.check_handshake_connection_timeout.cancel()
                 self.higherProtocol().connection_made(self.higher_transport)
                 logger.debug("Client Poop handshake success!")
 
             else:
-                new_packet = StartupPacket()
+                new_packet = HandshakePacket()
                 new_packet.status = 2
                 # new_packet.ACK = packet.SYN
                 new_packet.error = "The ACK doesn't match!  Client Connection Lost!"
@@ -227,7 +237,7 @@ class POOPProtocol(StackingProtocol):
             if time.time() - self.last_handshake_time > 10:
                 logger.debug("NO Data Transferring for a long time! Dropped!")
                 # Reset the connection
-                new_packet = StartupPacket()
+                new_packet = HandshakePacket()
                 new_packet.SYN = self.CSYN
                 new_packet.status = 0
                 self.transport.write(new_packet.__serialize__())
@@ -249,9 +259,10 @@ class POOPProtocol(StackingProtocol):
     def send_packets_inqueue(self):
         while self.send_buffer and len(
                 self.send_window) <= self.send_window_size and self.next_seq_send < self.next_expected_ack + self.send_window_size:
+                #这个函数是没有else的，也就是说要满足这些条件就可以了
             if len(self.send_buffer) >= 15000:
                 new_packet = DataPacket()
-                new_packet.seq = self.next_seq_send
+                new_packet.seq = self.next_seq_send #把跟握手相关的seq=SSYN/CSYN赋值给了包中的seq
                 new_packet.data = bytes(self.send_buffer[0:15000])
                 new_packet.hash = 0
                 new_packet.hash = binascii.crc32(new_packet.__serialize__()) & 0xffffffff
@@ -266,25 +277,25 @@ class POOPProtocol(StackingProtocol):
                 # set the send_buffer to be empty again
                 self.send_buffer = []
 
-            #
+            
             if self.next_seq_recv == 2 ** 32:
                 self.next_seq_recv = 0
 
             else:
-                self.next_seq_send = self.next_seq_send + 1
+                self.next_seq_send = self.next_seq_send + 1  #计算下一个包的seq
 
             resend_packet = ResendPacket()
             resend_packet.seq = new_packet.seq
             resend_packet.data = new_packet.data
             resend_packet.hash = new_packet.hash
-            resend_packet.TIMESTAMP = time.time()
-            self.send_window.append(resend_packet)
-            self.transport.write(new_packet.__serialize__())
+            resend_packet.TIMESTAMP = time.time()   #如果我要resend的话我就把new_packet的值给resend_packet，其实就是每一个发出的包都备份一下
+            self.send_window.append(resend_packet)  #send_window中主要的内容就是没有发送出去的包或者即将要发送的包？
+            self.transport.write(new_packet.__serialize__())    #一切处理完了在把东西发出去
 
     async def resend_check(self):
         while True:
             current_time = time.time()
-            for resend_packet in self.send_window_:
+            for resend_packet in self.send_window:
                 if current_time - resend_packet.TIMESTAMP > 2:
                     packet = DataPacket()
                     packet.seq = resend_packet.seq
@@ -294,7 +305,7 @@ class POOPProtocol(StackingProtocol):
                     resend_packet.TIMESTAMP = current_time
             await asyncio.sleep(0.5)
 
-    def datapacket_recv(self, packet):
+    def datapacket_recv(self, packet):      #先运行receive，然后在收到了东西之后调用send_packets_inqueue发
         self.last_data_time = time.time()
         # Drop if not a datapacket
         if packet.DEFINITION_IDENTIFIER != "poop.datapacket":
@@ -302,25 +313,26 @@ class POOPProtocol(StackingProtocol):
             return
 
         # If ACK is set, handle ACK
-        if packet.ACK:
+        if packet.ACK:  #有ACK表明一定是对面收到了第一收到的包（所以我们写的是对面不一定按顺序收到
             # Check hash, drop if invalid
             tmp_packet = DataPacket()
-            tmp_packet.ACK = packet.ack
+            tmp_packet.ACK = packet.ack #为啥不是packet.ACK？
             tmp_packet.hash = 0
             if binascii.crc32(tmp_packet.__serialize__()) & 0xffffffff != packet.hash:
                 logger.debug("The hash doesn't match. Dropped!")
                 return
             # If ACK matches sequence of a packet in send queue, take off of send queue, and update send queue
             self.send_window[:] = [send_pkt for send_pkt in self.send_window if send_pkt.seq != packet.ack]
+            #这句就是把没有收到ack的包放到sned window
 
-            if self.send_window:
-                self.next_expected_ack = self.send_window[0].seq
+            if self.send_window:    #存在sequence和ack不匹配的包
+                self.next_expected_ack = self.send_window[0].seq    #我就先把没有收到的包但是应该是要发给我的包的seq作为我的请求
             else:
-                self.next_expected_ack = packet.ACK + 1
-            self.send_packets_inqueue()
+                self.next_expected_ack = packet.ACK + 1 #如果都有了，那就要下一个包；主要我觉得收包的这一边不会主动找发包的那一边要某个序列的包
+            self.send_packets_inqueue() #发送一个application层要发送的信息包，以及需要的下一个包的seq
             return
         # if there is no ack, which means the packets are data packets just received
-        elif packet.seq <= self.next_seq_recv + self.recv_window_size:
+        elif packet.seq <= self.next_seq_recv + self.recv_window_size: #没有ACK说明是收到过的包。 
             tmp_packet = DataPacket()
             tmp_packet.seq = packet.seq
             tmp_packet.data = packet.data
@@ -333,19 +345,19 @@ class POOPProtocol(StackingProtocol):
             return
         # continue the following when hash matches, send the sequence number of the already acquired packets
         new_ack_packet = DataPacket()
-        new_ack_packet.ACK = packet.seq
+        new_ack_packet.ACK = packet.seq #将收到的包的seq作为ACK发出去
         new_ack_packet.hash = 0
         new_ack_packet.hash = binascii.crc32(new_ack_packet.__serialize__()) & 0xffffffff
-        self.transport.write(new_ack_packet.__serialize__())
+        self.transport.write(new_ack_packet.__serialize__())    #发送一个ACK包
 
         # add the coming packet into the window and sort
         self.recv_window.append(packet)
-        self.recv_window.sort(key=lambda packet_: packet_.seq)
+        self.recv_window.sort(key=lambda packet_: packet_.seq)  #给需要收到的receive window排序
 
         # send the received packets to the higher application layer
         while self.recv_window:
             if self.recv_window[0].seq == self.next_seq_recv:
-                self.higherProtocol().data_received(self.recv_window.pop(0).data)
+                self.higherProtocol().data_received(self.recv_window.pop(0).data)#把收到的包交给application
                 # while self.recv_window:
                 #     if self.recv_window[0].seq == self.next_seq_recv:
                 #         self.recv_window.pop(0)
@@ -391,7 +403,7 @@ class POOPProtocol(StackingProtocol):
             Fack_packet = ShutdownPacket()
             Fack_packet.Fack = packet.FIN
             self.transport.write(Fack_packet.__serialize__())
-            self.transport.close()
+            self.transport.close()  #也就是说，我收到了，我就关闭我的连接了
 
 
 # from playground.network.common import StackingProtocolFactory
@@ -406,4 +418,3 @@ PassthroughClientFactory = StackingProtocolFactory.CreateFactoryType(
 PassthroughServerFactory = StackingProtocolFactory.CreateFactoryType(
     lambda: POOPProtocol(mode="server")
 )
-

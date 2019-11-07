@@ -269,10 +269,6 @@ class POOPProtocol(StackingProtocol):
 
 #包
 #shut
-
-
-
-
 # from playground.network.common import StackingProtocolFactory
 #
 # PassthroughFactory = StackingProtocolFactory.CreateFactoryType(PassthroughProtocol)
