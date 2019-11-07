@@ -121,13 +121,13 @@ class POOP(StackingProtocol):
             handshake_pkt.hash = binascii.crc32(
                 handshake_pkt.__serialize__()) & 0xffffffff
             self.transport.write(handshake_pkt.__serialize__())
+
             # TODO:start timer
             self.handshake_timeout_task = self.loop.create_task(
                 self.handshake_timeout_check())
             self.status = 'SYN_SENT'
             # save sended handshake packet
             self.send_buff.append(handshake_pkt.__serialize__())
-            print("1111111111111111111111111111111")
 
     def handshake_send_error(self):
         print("handshake error!")
@@ -265,7 +265,6 @@ class POOP(StackingProtocol):
         self.deserializer.update(buffer)
         for pkt in self.deserializer.nextPackets():
             pkt_type = pkt.DEFINITION_IDENTIFIER
-            print (pkt_type)
             if not pkt_type:  # NOTE: not sure if this is necessary
                 print("{} POOP error: the recv pkt don't have a DEFINITION_IDENTIFIER")
                 return
@@ -329,8 +328,6 @@ class POOP(StackingProtocol):
 
     # this function is called when self already sent a shutdown packet (status == FIN_SENT)
     def shutdown_ack_recv(self, pkt):
-        # print (pkt.DEFINITION_IDENTIFIER)
-        # print (pkt.FIN)
         if pkt.DEFINITION_IDENTIFIER == "poop.shutdownpacket":
             # simultaneous shutdown. Shutdown immediately.
             print("Shutdown due to: Simultaneous shutdown")
@@ -367,22 +364,16 @@ class POOP(StackingProtocol):
         print('sending shutdown pkt.')
         self.FIN = self.send_next
         pkt = ShutdownPacket(FIN=self.FIN, hash=0)
-        print ('123')
         pkt.hash = binascii.crc32(pkt.__serialize__()) & 0xffffffff
-        print ('123')
         self.transport.write(pkt.__serialize__())
-        print ('123')
         self.loop.create_task(self.shutdown_timeout_check())
-        print ('123')
         self.status = 'FIN_SENT'
         return
 
     async def shutdown_timeout_check(self):
         count = 0
-        print ('shutdown timeout check')
         while count < 2:
-            # await asyncio.sleep(2)
-            print (self.status)
+            await asyncio.sleep(30)
             if self.status != 'DYING':
                 print('Timeout. Resending shutdown pkt.')
                 pkt = ShutdownPacket(FIN=self.send_next, hash=0)
@@ -420,14 +411,14 @@ class POOP(StackingProtocol):
                 # time out after 5 min
                 print("Shutdown due to: connection timeout")
                 self.status = "DYING"
-                self.higherProtocol().connection_lost()
+                self.higherProtocol().connection_lost(None)
                 self.transport.close()
                 return
             await asyncio.sleep(300 - (time.time() - self.last_recv))
 
     async def wait_ack_timeout(self, this_pkt):
         while self.status == "ESTABLISHED":
-            await asyncio.sleep(2)
+            await asyncio.sleep(30)
             for pkt in self.send_queue:
                 if pkt.seq < this_pkt.seq:
                     continue
@@ -551,3 +542,4 @@ PassthroughClientFactory = StackingProtocolFactory.CreateFactoryType(
 
 PassthroughServerFactory = StackingProtocolFactory.CreateFactoryType(
     lambda: POOP(mode="server"))
+
