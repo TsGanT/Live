@@ -95,8 +95,10 @@ class POOP(StackingProtocol):
         self.recv_wind_size = 10
         self.recv_next = None
         self.send_buff = []
+        self.send_packet = None
+        self.send_packet_time = 0
         self.send_queue = []
-        self.send_wind_size = 10
+        self.send_wind_size = 5
         self.send_next = None  # sequence number of next pkt to send
         self.seq = randrange(255)
         self.higher_transport = None
@@ -211,6 +213,7 @@ class POOP(StackingProtocol):
                         self.next_expected_ack = self.SYN
                         self.recv_next = pkt.SYN - 1
                         self.last_recv = time.time()
+                        self.loop.create_task(self.wait_ack_timeout())
                         self.higherProtocol().connection_made(
                             self.higher_transport)
                         logger.debug("{} POOP: handshake success!".format(
@@ -273,19 +276,19 @@ class POOP(StackingProtocol):
             if pkt_type == "poop.handshakepacket":
                 self.last_recv = time.time()
                 self.handshake_pkt_recv(pkt)
-                return
+                continue
             elif pkt_type == "poop.datapacket":
                 if self.status == 'FIN_SENT':
                     self.shutdown_ack_recv(pkt)
                 self.last_recv = time.time()
                 self.data_pkt_recv(pkt)
-                return
+                continue
             elif pkt_type == "poop.shutdownpacket":
                 if self.status == 'FIN_SENT':
                     self.shutdown_ack_recv(pkt)
                 self.last_recv = time.time()
                 self.init_shutdown_pkt_recv(pkt)
-                return
+                continue
             else:
                 print("{} POOP error: the recv pkt name: \"{}\" this is unexpected".format(
                     self._mode, pkt_type))
@@ -391,9 +394,10 @@ class POOP(StackingProtocol):
 
     async def shutdown_send_wait(self):
         # this either send shutdown after all ack received or destroyed by connection_timeout
+        print("The same error again")
         while True:
             await asyncio.sleep(1)
-            if not self.send_queue:
+            if not self.send_packet:
                 self.send_shutdown_pkt()
                 return
             elif self.status != 'ESTABLISHED':
@@ -416,18 +420,15 @@ class POOP(StackingProtocol):
                 return
             await asyncio.sleep(300 - (time.time() - self.last_recv))
 
-    async def wait_ack_timeout(self, this_pkt):
+    async def wait_ack_timeout(self):
         while self.status == "ESTABLISHED":
-            await asyncio.sleep(30)
-            for pkt in self.send_queue:
-                if pkt.seq < this_pkt.seq:
-                    continue
-                if pkt.seq == this_pkt.seq:
-                    self.transport.write(pkt.__serialize__())
-                    print('RE: SEQ='+str(pkt.seq))
-                    break
-                if pkt.seq > this_pkt.seq:
-                    return
+            await asyncio.sleep(2)
+            if self.send_packet:
+                try:
+                    print(self.send_packet)
+                    self.transport.write(self.send_packet.__serialize__())
+                except Exception as error:
+                    print(error)
 
     def data_pkt_recv(self, pkt):
         # Drop if not a datapacket
@@ -436,23 +437,23 @@ class POOP(StackingProtocol):
 
         # If ACK is set, handle ACK
         if pkt.ACK:
+            if pkt.seq or pkt.data:
+                return 
             # Check hash, drop if invalid
             pkt_copy = DataPacket(ACK=pkt.ACK, hash=0)
             if binascii.crc32(
                     pkt_copy.__serialize__()) & 0xffffffff != pkt.hash:
+                print("Wrong hash in ACK")
                 return
             # If ACK matches seq of a pkt in send queue, take off of send queue, and update send queue
-            self.send_queue[:] = [
-                send_pkt for send_pkt in self.send_queue
-                if send_pkt.seq != pkt.ACK
-            ]
-            print("IN: ACK=" + str(pkt.ACK))
-            if self.send_queue:
-                self.next_expected_ack = self.send_queue[0].seq
+            if pkt.ACK == self.send_packet.seq:
+                self.send_packet = None
+                self.queue_send_pkts()
+                print("IN: ACK=" + str(pkt.ACK))
+
             else:
-                self.next_expected_ack = pkt.ACK + 1
-            self.queue_send_pkts()
-            return
+                logger.debug("IN: ACK="+str(pkt.ACK))
+            return         
 
         if pkt.seq <= self.recv_next + self.recv_wind_size:
             pkt_copy = DataPacket(seq=pkt.seq, data=pkt.data, hash=0)
@@ -505,15 +506,15 @@ class POOP(StackingProtocol):
         # kill higher protocol
         print('Higher protocol called init_close(). Killing higher protocol.')
         self.higherProtocol().connection_lost(None)
-        if not self.send_queue:
-            self.send_shutdown_pkt()
+        if not self.send_packet:
+           print("Ball Ball YOU")
+           self.send_shutdown_pkt()
         else:
-            self.loop.create_task(self.shutdown_send_wait())
+           print(self.send_packet)
+           self.loop.create_task(self.shutdown_send_wait())
 
     def queue_send_pkts(self):
-        while self.send_buff and len(
-                self.send_queue
-        ) <= self.send_wind_size and self.send_next < self.next_expected_ack + self.send_wind_size:
+        while self.send_buff and not self.send_packet:
             if len(self.send_buff) >= 15000:
                 pkt = DataPacket(seq=self.send_next,
                                  data=bytes(self.send_buff[0:15000]),
@@ -531,10 +532,13 @@ class POOP(StackingProtocol):
                 self.recv_next = 0
             else:
                 self.send_next += 1
-            self.send_queue.append(pkt)
+
+            #self.send_queue.append(pkt)
+            self.send_packet = pkt
+            self.send_packet_time = time.time()
             self.transport.write(pkt.__serialize__())
             print("OUT: SEQ=" + str(pkt.seq))
-            self.loop.create_task(self.wait_ack_timeout(pkt))
+            # self.loop.create_task(self.wait_ack_timeout(pkt))
 
 
 PassthroughClientFactory = StackingProtocolFactory.CreateFactoryType(
