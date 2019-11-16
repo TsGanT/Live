@@ -75,7 +75,7 @@ class CRAP(StackingProtocol):
     def __init__(self, mode):
         logger.debug("{} CRAP: craptography protocol".format(mode))
         print("Verfying.......")
-        self._mode = mode
+        self.mode = mode
         self.status = 0
         self.pk = None
         self.signature = None
@@ -84,7 +84,7 @@ class CRAP(StackingProtocol):
         self.deserializer = CrapPacketType.Deserializer(errHandler=ErrorHandleClass())
 
     def connection_made(self, transport):
-        logger.debug("{} CRAP: connection made".format(self._mode))
+        logger.debug("{} CRAP: connection made".format(self.mode))
         #self.loop = asyncio.get_event_loop()
         self.last_recv = time.time()
         self.transport = transport
@@ -99,7 +99,7 @@ class CRAP(StackingProtocol):
 
         self.status = "LISTEN"
 
-        if self._mode == "client":
+        if self.mode == "client":
             print("connecton made")
             #generate RSA signKA and public key
             self.l_private_key = rsa.generate_private_key(public_exponent=65537,key_size=2048,
@@ -163,9 +163,9 @@ class CRAP(StackingProtocol):
 
     def handshake_pkt_recv(self, pkt):
         print("first recive a data")
-        if self._mode == "server":
+        if self.mode == "server":
             if pkt.status == 2:
-                logger.debug("{}, CRAP: ERROR: recv an error packet ".format(self._mode))
+                logger.debug("{}, CRAP: ERROR: recv an error packet ".format(self.mode))
                 return
             elif self.status == "LISTEN":
                 print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
@@ -249,10 +249,10 @@ class CRAP(StackingProtocol):
                     self.handshake_send_error()
                     return
             
-        elif self.status == "PK_SENT":
+        elif self.status == "PK_SENT" and pkt.status == 1:
             #peer1 or peer2 has sent his public key and try to first verify cert and second calculate the shared key
             #There are some codes about verify the cert 
-            if self._mode == "client":
+            if self.mode == "client":
                 if pkt.status == 1:     #peer1 first get the public key from peer2
                     Bcert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                     spublic_keyB = Bcert.public_key()
