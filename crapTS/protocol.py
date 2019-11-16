@@ -44,12 +44,12 @@ class HandshakePacket(CrapPacketType):
            SUCCESS     = 1
            ERROR       = 2
            FIELDS = [
-               ("status", UINT8),
-            ("nonce", UINT32({Optional:True})),
-            ("nonceSignature", BUFFER({Optional:True})),
-               ("signature", BUFFER({Optional:True})),
-               ("pk", BUFFER({Optional:True})),
-               ("cert", BUFFER({Optional:True}))
+                ("status", UINT8),
+                ("nonce", UINT32({Optional:True})),
+                ("nonceSignature", BUFFER({Optional:True})),
+                ("signature", BUFFER({Optional:True})),
+                ("pk", BUFFER({Optional:True})),
+                ("cert", BUFFER({Optional:True}))
            ]
 
 class DataPacket(CrapPacketType):
@@ -71,16 +71,9 @@ class CRAP(StackingProtocol):
         print("Verfying.......")
         self._mode = mode
         self.status = 0
-        self.l_private_key = None
-        self.l_public_key = None
         self.pk = None
-        self.pk_bytes = None
-        self.shared_key = None
         self.signature = None
         self.cert = None
-        self.last_recv = 0      #time of last packet received, in case for a long time
-        self.shutdown_wait_start = 0
-        self.privatek = None
         self.deserializer = CrapPacketType.Deserializer(errHandler=ErrorHandleClass())
 
     def tsl_connection_made(self, transport):
@@ -154,9 +147,10 @@ class CRAP(StackingProtocol):
             if pkt.status == 0:
                 # We need to transfer bytes in to object
                 Acert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
+                spublic_keyA = Acert.public_key()
 
                 try:
-                    pkt.Acert.public_key().verify(
+                    spublic_keyA.verify(
                         pkt.signature,
                         pkt.pk,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
@@ -199,7 +193,7 @@ class CRAP(StackingProtocol):
                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                     salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()
                 )       #Get signature
-                self.cert = certB
+                self.cert = certB_bytes
                 handshake_pkt = HandshakePacket(pk = self.pk_bytes, status = 1, nonce = self.nonceB, 
                     nonceSignature=nonceSignatureB,
                     signature = self.signature, cert = self.cert)    # This is peer2 first get packet
@@ -210,7 +204,7 @@ class CRAP(StackingProtocol):
                 self.status = "PK_SENT"
             elif pkt.status == 1:
                 try:
-                    self.l_public_keyB.verify(pkt.nonceSignature, self.nonceB,
+                    spublic_keyA.verify(pkt.nonceSignature, self.nonceB,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
 
@@ -232,11 +226,12 @@ class CRAP(StackingProtocol):
 
             if pkt.status == 1:     #peer1 first get the public key from peer2
                 Bcert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
+                spublic_keyB = Bcert.public_key()
                 try:
-                    pkt.cert.public_key().verify(pkt.signature, pkt.pk,
+                    spublic_keyB.verify(pkt.signature, pkt.pk,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
-                    pkt.cert.public_key().verify(pkt.nonceSignature, self.nonceA,
+                    spublic_keyB.verify(pkt.nonceSignature, self.nonceA,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
 
@@ -248,7 +243,7 @@ class CRAP(StackingProtocol):
             
                 publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
-                nonceSignatureA = self.signkA.sign(pkt.nonce,
+                nonceSignatureA = self.l_private_key.sign(pkt.nonce,
                                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                                     hashes.SHA256())
 
