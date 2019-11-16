@@ -105,6 +105,7 @@ class CRAP(StackingProtocol):
                         ).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
                             x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),critical=False,).sign(self.l_private_key, hashes.SHA256(), default_backend())
             certA_bytes = certA.public_bytes(Encoding.PEM)
+            print(certA_bytes)
 
             # with open("kl_private_key.pem", "wb") as f:
             #     f.write(key.private_bytes(
@@ -146,6 +147,7 @@ class CRAP(StackingProtocol):
         elif self.status == "LISTEN":
             if pkt.status == 0:
                 # We need to transfer bytes in to object
+                print(pkt.cert)
                 Acert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                 spublic_keyA = Acert.public_key()
 
