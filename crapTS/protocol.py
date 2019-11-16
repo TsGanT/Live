@@ -167,6 +167,7 @@ class CRAP(StackingProtocol):
             logger.debug("{}, CRAP: ERROR: recv an error packet ".format(self._mode))
             return
         elif self.status == "LISTEN":
+            print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
             if pkt.status == 0:
                 # We need to transfer bytes in to object
                 print("get packet")
@@ -230,6 +231,7 @@ class CRAP(StackingProtocol):
                 self.status = "PK_SENT"
             elif pkt.status == 1:
                 try:
+                    print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
                     spublic_keyA.verify(pkt.nonceSignature, self.nonceB,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
@@ -254,6 +256,7 @@ class CRAP(StackingProtocol):
                 Bcert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                 spublic_keyB = Bcert.public_key()
                 try:
+                    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
                     spublic_keyB.verify(pkt.signature, pkt.pk,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
