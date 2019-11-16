@@ -238,7 +238,7 @@ class CRAP(StackingProtocol):
                     self.transport.close()
                 print("Handshake complete")
                 
-                else:
+            else:
                     #ERROR: This is peer2 and the first time the status cannot be 1 or 2
                     self.handshake_send_error()
                     return
