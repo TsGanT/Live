@@ -217,7 +217,7 @@ class Lab2AutogradeClient(asyncio.Protocol):
         try:
             transport, protocol = await playground.create_connection(
                 DummyProtocol,
-                host="crap://{}".format(self.server_addr), 
+                host="crapTS://{}".format(self.server_addr), 
                 port=self.server_port)
         except Exception as e:
             raise Exception("Could not connect to server to execute command")
@@ -233,7 +233,7 @@ class Lab2AutogradeClient(asyncio.Protocol):
                 self.server = await playground.create_server(
                     lambda: self.server_test_protocol,
                     port=self.my_server_port,
-                    family="crap")
+                    family="crapTS")
             except Exception as e:
                 raise Exception("Could not create server to execute command")
         if server_command == "accept":

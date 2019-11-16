@@ -3,6 +3,7 @@ from ..poop.protocol import POOP
 import logging
 import time
 import asyncio
+import random
 from random import randrange
 from playground.network.packet import PacketType
 from playground.network.packet.fieldtypes import UINT8, UINT32, STRING, BUFFER
@@ -65,6 +66,11 @@ class ErrorHandleClass():
     def handleException(self, e):
         print(e)
 
+class SecureTransport(StackingTransport):
+    def connect_protocol(self, protocol):
+        self.protocol= protocol
+
+
 class CRAP(StackingProtocol):
     def __init__(self, mode):
         logger.debug("{} CRAP: craptography protocol".format(mode))
@@ -74,12 +80,16 @@ class CRAP(StackingProtocol):
         self.pk = None
         self.signature = None
         self.cert = None
+        self.higher_transport = None
         self.deserializer = CrapPacketType.Deserializer(errHandler=ErrorHandleClass())
 
-    def tsl_connection_made(self, transport):
+    def connection_made(self, transport):
         logger.debug("{} CRAP: connection made".format(self._mode))
         #self.loop = asyncio.get_event_loop()
         self.last_recv = time.time()
+        self.transport = transport
+        self.higher_transport = SecureTransport(transport)
+        self.higher_transport.connect_protocol(self)
         #self.loop.creat_task(self.connection_timeout_check())
 
         #There are some codes about create the cert
@@ -117,7 +127,8 @@ class CRAP(StackingProtocol):
             publickey_bytesA = self.l_public_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
 
 
-            self.nonceA = os.urandom(32)
+            #self.nonceA = os.urandom(32)
+            self.nonceA = random.randrange(0, 10000)
             self.privatekA = ec.generate_private_key(ec.SECP384R1(), default_backend())
             self.pk = self.privatekA.public_key()
             self.pk_bytes = self.pk.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
@@ -127,10 +138,13 @@ class CRAP(StackingProtocol):
                 salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()
             )       #Get signature
             #This cert is nothing
-            handshake_pkt = HandshakePacket(status = 0, nonce = self.nonce, pk = self.pk_bytes, 
+            print(self.pk_bytes)
+            print(self.signature)
+            handshake_pkt = HandshakePacket(status = 0, nonce = self.nonceA, pk = self.pk_bytes, 
                 signature = self.signature, cert = certA_bytes)
+            print("packet")
             self.transport.write(handshake_pkt.__serialize__())
-
+            print("sent")
             #self.handshake_timeout_task = self.loop.create_task(self.handshake_timeout_check())
             self.status = "PK_SENT"
     
@@ -140,8 +154,18 @@ class CRAP(StackingProtocol):
         self.transport.write(error_pkt.__serialize__())
         return
     
-    
+    def data_received(self, buffer):
+        print("received data")
+        self.deserializer.update(buffer)
+        for pkt in self.deserializer.nextPackets():
+            self.handshake_pkt_recv(pkt)
+
+
+
+
+
     def handshake_pkt_recv(self, pkt):
+        print("recv")
         if pkt.status == 2:
             logger.debug("{}, CRAP: ERROR: recv an error packet ".format(self._mode))
             return
@@ -183,9 +207,9 @@ class CRAP(StackingProtocol):
                                 x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),critical=False,).sign(self.l_private_keyB, hashes.SHA256(), default_backend())
                 certB_bytes = certB.public_bytes(Encoding.PEM)
 
-                self.nonceB = os.urandom(32)
+                self.nonceB = random.randrange(0, 2**10) #os.urandom(32)
                 nonceSignatureB = self.l_private_keyB.sign(
-                    pkt.nonce,
+                    str(pkt.nonce).encode('ASCII'),
                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                     salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()
                 )
@@ -257,7 +281,7 @@ class CRAP(StackingProtocol):
                 return
     
 SecureClientFactory = StackingProtocolFactory.CreateFactoryType(
-    lambda: CRAP(mode="client"), lambda: POOP(mode="client"))
+    lambda: POOP(mode="client"), lambda: CRAP(mode="client"))
 
 SecureServerFactory = StackingProtocolFactory.CreateFactoryType(
-    lambda: CRAP(mode="server"), lambda: POOP(mode="server"))
+    lambda: POOP(mode="server"), lambda: CRAP(mode="server"))
