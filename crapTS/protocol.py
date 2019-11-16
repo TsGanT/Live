@@ -116,7 +116,7 @@ class CRAP(StackingProtocol):
                         ).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
                             x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),critical=False,).sign(self.l_private_key, hashes.SHA256(), default_backend())
             certA_bytes = certA.public_bytes(Encoding.PEM)
-            print(certA_bytes)
+            print("certA_bytes: fan zheng you dongxi")
 
             # with open("kl_private_key.pem", "wb") as f:
             #     f.write(key.private_bytes(
@@ -138,13 +138,13 @@ class CRAP(StackingProtocol):
                 salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()
             )       #Get signature
             #This cert is nothing
-            print(self.pk_bytes)
-            print(self.signature)
+            print("client's self.pk_bytes")
+            print("client's self.signature")
             handshake_pkt = HandshakePacket(status = 0, nonce = self.nonceA, pk = self.pk_bytes, 
                 signature = self.signature, cert = certA_bytes)
-            print("packet")
+            print("client packet already generate a packet")
             self.transport.write(handshake_pkt.__serialize__())
-            print("sent")
+            print("client already sent")
             #self.handshake_timeout_task = self.loop.create_task(self.handshake_timeout_check())
             self.status = "PK_SENT"
     
@@ -155,25 +155,26 @@ class CRAP(StackingProtocol):
         return
     
     def data_received(self, buffer):
-        print("received data")
+        print("received data!@!")
         self.deserializer.update(buffer)
         for pkt in self.deserializer.nextPackets():
             self.handshake_pkt_recv(pkt)
 
 
     def handshake_pkt_recv(self, pkt):
-        print("recv")
+        print("first recive a data")
         if pkt.status == 2:
             logger.debug("{}, CRAP: ERROR: recv an error packet ".format(self._mode))
             return
         elif self.status == "LISTEN":
             if pkt.status == 0:
                 # We need to transfer bytes in to object
-                print(pkt.cert)
                 Acert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                 spublic_keyA = Acert.public_key()
-
+                print("Server get cert from client:")
+                print(Acert)
                 try:
+                    print("begin verify client's signature")
                     spublic_keyA.verify(
                         pkt.signature,
                         pkt.pk,
