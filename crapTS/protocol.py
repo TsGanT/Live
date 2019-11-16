@@ -253,8 +253,8 @@ class CRAP(StackingProtocol):
                 self.handshake_send_error()
                 return
     
-PassthroughClientFactory = StackingProtocolFactory.CreateFactoryType(
-    lambda: CRAP(mode="peer1"))
+SecureClientFactory = StackingProtocolFactory.CreateFactoryType(
+    lambda: CRAP(mode="client"), lambda: POOP(mode="client"))
 
-PassthroughServerFactory = StackingProtocolFactory.CreateFactoryType(
-    lambda: CRAP(mode="peer2"))
+SecureServerFactory = StackingProtocolFactory.CreateFactoryType(
+    lambda: CRAP(mode="server"), lambda: POOP(mode="server"))
