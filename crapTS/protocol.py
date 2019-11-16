@@ -169,6 +169,7 @@ class CRAP(StackingProtocol):
         elif self.status == "LISTEN":
             if pkt.status == 0:
                 # We need to transfer bytes in to object
+                print("get packet")
                 Acert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                 spublic_keyA = Acert.public_key()
                 print("Server get cert from client:")
