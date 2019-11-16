@@ -161,9 +161,6 @@ class CRAP(StackingProtocol):
             self.handshake_pkt_recv(pkt)
 
 
-
-
-
     def handshake_pkt_recv(self, pkt):
         print("recv")
         if pkt.status == 2:
@@ -227,7 +224,7 @@ class CRAP(StackingProtocol):
                 self.transport.write(handshake_pkt.__serialize__())
 
                 publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
-                server_shared_key = self.privkB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
+                server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
                 self.status = "PK_SENT"
             elif pkt.status == 1:
                 try:
