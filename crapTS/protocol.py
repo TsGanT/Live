@@ -272,7 +272,7 @@ class CRAP(StackingProtocol):
                 nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
                                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                                     hashes.SHA256())
-
+                print(nonceSignatureA)
                 handshake_pkt = HandshakePacket(status=1, nonceSignature=nonceSignatureA)
                 print("-------------send packet second time!!!------------------")
                 self.transport.write(handshake_pkt.__serialize__())
