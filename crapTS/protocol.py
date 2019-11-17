@@ -223,9 +223,9 @@ class CRAP(StackingProtocol):
                     signature = self.signature, cert = self.cert)    # This is peer2 first get packet
                 self.transport.write(handshake_pkt.__serialize__())
 
-                publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
-                server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
-                print("Calculate the server_shared_key success!!!")
+                # publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
+                # server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
+                # print("Calculate the server_shared_key success!!!")
             elif pkt.status == 1:
                 try:
                     print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
