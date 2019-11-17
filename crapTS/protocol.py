@@ -254,9 +254,11 @@ class CRAP(StackingProtocol):
                     spublic_keyB.verify(pkt.signature, pkt.pk,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
+                    print("verify public key success!")
                     spublic_keyB.verify(pkt.nonceSignature, self.nonceA,
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
+                    print("verify nonce success!")
 
                 except Exception as error:
                     logger.debug("Sever verify failed because wrong signature")
