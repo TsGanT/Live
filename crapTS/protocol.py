@@ -179,6 +179,7 @@ class CRAP(StackingProtocol):
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256()
                     )
+                print("verify client's signature success!!!!")
                 except Exception as error:
                     logger.debug("Wrong signature from client!!!!!!!")
                     handshake_pkt = HandshakePacket(status=2)
@@ -227,10 +228,10 @@ class CRAP(StackingProtocol):
             elif pkt.status == 1:
                 try:
                     print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
-                    spublic_keyA.verify(pkt.nonceSignature, self.nonceB,
+                    spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
-
+                print("Server verify nonceB success!!!!!")
                 except Exception as error:
                     logger.debug("Sever verify failed because wrong signature")
                     handshake_pkt = HandshakePacket(status=2)
@@ -255,7 +256,7 @@ class CRAP(StackingProtocol):
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
                     print("verify public key success!")
-                    spublic_keyB.verify(pkt.nonceSignature, self.nonceA,
+                    spublic_keyB.verify(pkt.nonceSignature, str(self.nonceA).encode('ASCII'),
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
                     print("verify nonce success!")
@@ -268,7 +269,7 @@ class CRAP(StackingProtocol):
             
                 publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
-                nonceSignatureA = self.l_private_key.sign(pkt.nonce,
+                nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
                                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                                     hashes.SHA256())
 
