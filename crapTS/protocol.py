@@ -266,7 +266,7 @@ class CRAP(StackingProtocol):
                     handshake_pkt = HandshakePacket(status=2)
                     self.transport.write(handshake_pkt.__serialize__())
                     self.transport.close()               
-            
+                print("begin to send next packe")
                 publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 print("publickeyB:", publickeyB)
                 client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
