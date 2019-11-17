@@ -274,6 +274,7 @@ class CRAP(StackingProtocol):
                                     hashes.SHA256())
 
                 handshake_pkt = HandshakePacket(status=1, nonceSignature=nonceSignatureA)
+                print("-------------send packet second time!!!------------------")
                 self.transport.write(handshake_pkt.__serialize__())
             else:
                 self.handshake_send_error()
