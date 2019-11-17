@@ -231,7 +231,7 @@ class CRAP(StackingProtocol):
                     spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
-                print("Server verify nonceB success!!!!!")
+                    print("Server verify nonceB success!!!!!")
                 except Exception as error:
                     logger.debug("Sever verify failed because wrong signature")
                     handshake_pkt = HandshakePacket(status=2)
