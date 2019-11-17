@@ -227,7 +227,7 @@ class CRAP(StackingProtocol):
                 server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
             elif pkt.status == 1:
                 try:
-                    print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
+                    print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
                     spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
