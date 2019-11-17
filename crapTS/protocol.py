@@ -268,7 +268,9 @@ class CRAP(StackingProtocol):
                     self.transport.close()               
             
                 publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
+                print("publickeyB:", publickeyB)
                 client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
+                print("client_shared_key:", client_shared_key)
                 nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
                                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                                     hashes.SHA256())
