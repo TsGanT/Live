@@ -225,6 +225,7 @@ class CRAP(StackingProtocol):
 
                 publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
                 server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
+                print("Calculate the server_shared_key success!!!")
             elif pkt.status == 1:
                 try:
                     print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
@@ -267,14 +268,14 @@ class CRAP(StackingProtocol):
                     self.transport.write(handshake_pkt.__serialize__())
                     self.transport.close()               
                 print("begin to send next packe")
-                publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
-                print("publickeyB:", publickeyB)
-                client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
-                print("client_shared_key:", client_shared_key)
-                nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
-                                    padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
-                                    hashes.SHA256())
-                print(nonceSignatureA)
+                # publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
+                # print("publickeyB:", publickeyB)
+                # client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
+                # print("client_shared_key:", client_shared_key)
+                # nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
+                #                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
+                #                     hashes.SHA256())
+                # print(nonceSignatureA)
                 handshake_pkt = HandshakePacket(status=1, nonceSignature=nonceSignatureA)
                 print("-------------send packet second time!!!------------------")
                 self.transport.write(handshake_pkt.__serialize__())
