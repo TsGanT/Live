@@ -223,13 +223,13 @@ class CRAP(StackingProtocol):
                 #-----------------------------------------verify transported cert
                 for certdata in pkt.certChain:
                     cert = x509.load_pem_x509_certificate(certdata, default_backend())
-                    try:
-                        print("Begin verify certificate in cert chain")
-                        cert.public_key().verify(Acert.signature, Acert.tbs_certificate_bytes, 
-                            padding.PKCS1v15(), Acert.signature_hash_algorithm)
-                        print("Verify certificate in certChain success!!!!!!!!!!")
-                    except Exception as error:
-                        logger.debug("Wrong certificate from client!!!!!!!")
+                    print("Begin verify certificate in cert chain")
+                    team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    receive_address = Acert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    if team_address == receive_address:
+                        pass
+                    else:
+                        logger.debug("Invalid certificate from server!!!!!!!")
                         handshake_pkt = HandshakePacket(status=2)
                         self.transport.write(handshake_pkt.__serialize__())
                         self.transport.close()
@@ -323,16 +323,18 @@ class CRAP(StackingProtocol):
 
                 for certdata in pkt.certChain:
                     cert = x509.load_pem_x509_certificate(certdata, default_backend())
-                    try:
-                        print("Begin verify certificate in cert chain")
-                        cert.public_key().verify(Bcert.signature, Bcert.tbs_certificate_bytes, 
-                            padding.PKCS1v15(), Bcert.signature_hash_algorithm)
-                        print("Verify certificate in certChain success!!!!!!!!!!")
-                    except Exception as error:
-                        logger.debug("Wrong certificate from server!!!!!!!")
+                    print("Begin verify certificate in cert chain")
+                    team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    receive_address = Bcert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    if team_address == receive_address:
+                        pass
+                    else:
+                        logger.debug("Invalid certificate from server!!!!!!!")
                         handshake_pkt = HandshakePacket(status=2)
                         self.transport.write(handshake_pkt.__serialize__())
-                        self.transport.close()          
+                        self.transport.close()
+          
+                    
                 print("begin to send next packe")
                 # publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 # print("publickeyB:", publickeyB)
