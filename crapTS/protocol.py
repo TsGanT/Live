@@ -27,7 +27,8 @@ from cryptography.hazmat.primitives.serialization import PublicFormat
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID
-#from OpenSSL.crypto import load_privatekey, FILETYPE_PEM, sign
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 import os      #used for generate random number and compare two nounce
 import datetime
 
@@ -70,7 +71,6 @@ class DataPacket(CrapPacketType):
     DEFINITION_VERSION = "1.0"
     FIELDS = [
         ("data", BUFFER),
-        ("signature", BUFFER),
     ]
 
 class ErrorPacket(CrapPacketType):
@@ -87,6 +87,11 @@ class ErrorHandleClass():
 class SecureTransport(StackingTransport):
     def connect_protocol(self, protocol):
         self.protocol= protocol
+    def write(self,data):
+        #------------------------- We need to finish this protocol
+        self.protocol.send(data)
+    def clsoe(self, data):
+        self.protocol.transport.close()
 
 
 class CRAP(StackingProtocol):
@@ -289,7 +294,29 @@ class CRAP(StackingProtocol):
                     handshake_pkt = HandshakePacket(status=2)
                     self.transport.write(handshake_pkt.__serialize__())
                     self.transport.close()
-                print("Handshake complete")
+                print("------------------------------Handshake complete---------------------------------")
+
+                publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
+                server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
+                print("Calculate the server_shared_key success!!!")
+
+                #-------------------------------------------------try to generate hash and get ivA, ivB, enkB, deKB
+                server_shared_key_bytes = server_shared_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+                digestB = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestB.update(server_shared_key_bytes)
+                hashB1 = digestB.finalize()
+                self.ivA = hashB1[0:12]
+                self.ivB = hashB1[12:23]
+
+                digestB2 = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestB2.update(hashB1)
+                hashB2 = digestB2.finalize()
+                self.enkey_B = hashB2[0:16]
+
+                digestB3 = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestB3.update(hashB2)
+                hashB3 = digestB3.finalize()
+                self.dekey_B = hashB3[0:16]
                 
             else:
                     #ERROR: This is peer2 and the first time the status cannot be 1 or 2
@@ -336,10 +363,6 @@ class CRAP(StackingProtocol):
           
                     
                 print("begin to send next packe")
-                # publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
-                # print("publickeyB:", publickeyB)
-                # client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
-                # print("client_shared_key:", client_shared_key)
                 nonceSignatureA = self.l_private_key.sign(str(pkt.nonce).encode('ASCII'),
                                      padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                                      hashes.SHA256())
@@ -347,9 +370,64 @@ class CRAP(StackingProtocol):
                 handshake_pkt = HandshakePacket(status=1, nonceSignature=nonceSignatureA)
                 print("-------------send packet second time!!!------------------")
                 self.transport.write(handshake_pkt.__serialize__())
+
+                #-------------------------------------------------try to generate hash and get ivA, ivB, enkA, deKA
+                publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
+                print("publickeyB:", publickeyB)
+                client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
+                client_shared_key_bytes = client_shared_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+                print("client_shared_key:", client_shared_key)
+                digestA = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestA.update(client_shared_key_bytes)
+                hashA1 = digestA.finalize()
+                self.ivA = hashA1[0:12]
+                self.ivB = hashA1[12:23]
+
+                digestA2 = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestA2.update(hashA1)
+                hashA2 = digestA2.finalize()
+                self.enkey_A = hashA2[0:16]
+
+                digestA3 = hashes.Hash(hashes.SHA256(), backend=default_backend())
+                digestA3.update(hashA2)
+                hashA3 = digestA3.finalize()
+                self.dekey_A = hashA3[0:16]
+
             else:
                 self.handshake_send_error()
                 return
+
+    #--------------------------------------------------------using IV and key to send encrypted data and this is also the method I transfer up
+    def send(self,data):
+        if self.mode == "client":
+            aesgcm = AESGCM(self.enkey_A)
+            en_data = aesgcm.encrypt(self.ivA, data, None)
+            self.ivA = (int.from_bytes(self.ivA, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
+            send_packet = DataPacket(data = en_data)
+            self.transport.write(send_packet.__serialize__())
+            print("client sends en_data!!!!!!!!!!!!!!!!!!")
+        elif self.mode == "server":
+            aesgcm = AESGCM(self.enkey_B)
+            en_data = aesgcm.encrypt(self.ivB, data, None)
+            self.ivB = (int.from_bytes(self.ivB, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
+            send_packet = DataPacket(data = en_data)
+            self.transport.write(send_packet.__serialize__())
+            print("Server sends en_data!!!!!!!!!!!!!!!!!")
+
+
+    def data_pkt_recv(self, pkt):
+        if self.mode == "client":
+            aesgcm = AESGCM(self.dekey_A)
+            use_data = aesgcm.decrypt(self.ivB, pkt.data, None)
+            print("Client recive data succes!!!!!!!!!!!")
+            self.ivB = (int.from_bytes(self.ivB, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
+            self.higherProtocol().data_received(use_data)
+        elif self.mode == "server":
+            aesgcm = AESGCM(self.dekey_B)
+            use_data = aesgcm.decrypt(self.ivA, pkt.data, None)
+            print("Server recive data succes!!!!!!!!!!!")
+            self.ivA = (int.from_bytes(self.ivA, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
+            self.higherProtocol().data_received(use_data)
     
 SecureClientFactory = StackingProtocolFactory.CreateFactoryType(
     lambda: POOP(mode="client"), lambda: CRAP(mode="client"))
