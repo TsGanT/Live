@@ -34,9 +34,9 @@ import datetime
 logger = logging.getLogger("playground.__connector__." + __name__)
 
 #-------------------------------------------------------------------try to get root cert
-RootcertPath = "/home/student_20194/Shi_Tang/Live/crapTS/20194_root.cert"
-Team4CertPath = "/home/student_20194/Shi_Tang/Live/crapTS/csr_team4_signed.cert"
-Team4PrivateKeyPath = "/home/student_20194/Shi_Tang/Live/crapTS/key_team4.pem"
+RootcertPath = "~/.playground/connectors/crapTS/20194_root.cert"
+Team4CertPath = "~/.playground/connectors/crapTS/csr_team4_signed.cert"
+Team4PrivateKeyPath = "~/.playground/connectors/crapTS/key_team4.pem"
 
 def loadFile(path):
     with open(path, "r") as key_file:
