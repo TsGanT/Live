@@ -6,7 +6,7 @@ import asyncio
 import random
 from random import randrange
 from playground.network.packet import PacketType
-from playground.network.packet.fieldtypes import UINT8, UINT32, STRING, BUFFER
+from playground.network.packet.fieldtypes import UINT8, UINT32, STRING, BUFFER, LIST
 from playground.network.packet.fieldtypes.attributes import Optional
 
 import binascii
@@ -33,6 +33,17 @@ import datetime
 
 logger = logging.getLogger("playground.__connector__." + __name__)
 
+#-------------------------------------------------------------------try to get root cert
+RootcertPath = "/home/student_20194/Shi_Tang/Live/crapTS/20194_root.cert"
+Team4CertPath = "/home/student_20194/Shi_Tang/Live/crapTS/csr_team4_signed.cert"
+Team4PrivateKeyPath = "/home/student_20194/Shi_Tang/Live/crapTS/key_team4.pem"
+
+def loadFile(path):
+    with open(path, "r") as key_file:
+        return key_file.read().encode("ASCII")
+
+
+
 #----------------------------------------------------------------This is crap protocol packet
 class CrapPacketType(PacketType):
     DEFINITION_IDENTIFIER = "crap"
@@ -50,7 +61,8 @@ class HandshakePacket(CrapPacketType):
                 ("nonceSignature", BUFFER({Optional:True})),
                 ("signature", BUFFER({Optional:True})),
                 ("pk", BUFFER({Optional:True})),
-                ("cert", BUFFER({Optional:True}))
+                ("cert", BUFFER({Optional:True})),
+                ("certChain", LIST(BUFFER, {Optional:True}))
            ]
 
 class DataPacket(CrapPacketType):
@@ -61,6 +73,12 @@ class DataPacket(CrapPacketType):
         ("signature", BUFFER),
     ]
 
+class ErrorPacket(CrapPacketType):
+    DEFINITION_IDENTIFIER = "crap.errorpacket”"
+    DEFINITION_VERSION = "1.0"
+    FIELDS = [
+        ("message", STRING),
+    ]
 
 class ErrorHandleClass():
     def handleException(self, e):
@@ -79,6 +97,7 @@ class CRAP(StackingProtocol):
         self.pk = None
         self.signature = None
         self.cert = None
+        self.certChain = None
         self.higher_transport = None
         self.deserializer = CrapPacketType.Deserializer(errHandler=ErrorHandleClass())
 
@@ -102,25 +121,27 @@ class CRAP(StackingProtocol):
             self.l_private_key = rsa.generate_private_key(public_exponent=65537,key_size=2048,
                 backend=default_backend())
             self.l_public_key = self.l_private_key.public_key()
+
+            rootcert = x509.load_pem_x509_certificate(loadFile(RootcertPath), default_backend())
+            team4cert = x509.load_pem_x509_certificate(loadFile(Team4CertPath), default_backend())
+            self.t4privatek = serialization.load_pem_private_key(loadFile(Team4PrivateKeyPath),password=b'passphrase', backend=default_backend())
+
+
             subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
                 x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
                 x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
-                x509.NameAttribute(NameOID.COMMON_NAME, u"mysite.com"),])
+                x509.NameAttribute(NameOID.COMMON_NAME, u"20194.4.0.25"),])     #I hava already change the common name
+            
+            # I think this is the place to sign the cert
+            # And the other problem is how to use AESGCM to authenticated encryption
             certA = x509.CertificateBuilder().subject_name(subject).issuer_name(
                 issuer).public_key(
                     self.l_public_key).serial_number(x509.random_serial_number()
                         ).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
-                            x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),critical=False,).sign(self.l_private_key, hashes.SHA256(), default_backend())
+                            x509.SubjectAlternativeName([x509.DNSName(u"20194.4.0.25")]),critical=False,).sign(self.t4privatek, hashes.SHA256(), default_backend())
             certA_bytes = certA.public_bytes(Encoding.PEM)
-            print("certA_bytes: fan zheng you dongxi")
-
-            # with open("kl_private_key.pem", "wb") as f:
-            #     f.write(key.private_bytes(
-            #         encoding=serialization.Encoding.PEM,
-            #         format=serialization.PrivateFormat.TraditionalOpenSSL,encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
-            #     ))    # in fact, we need to know how to get a cert
-            
+            print("certA_bytes: fan zheng you dongxi")    
             publickey_bytesA = self.l_public_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
 
 
@@ -138,8 +159,11 @@ class CRAP(StackingProtocol):
             print("client's self.pk_bytes")
             print("client's self.signature")
             handshake_pkt = HandshakePacket(status = 0, nonce = self.nonceA, pk = self.pk_bytes, 
-                signature = self.signature, cert = certA_bytes)
+                signature = self.signature, cert = certA_bytes, certChain = self.certChain)
             print("client packet already generate a packet")
+
+            self.certChain = [loadFile(Team4CertPath)]
+
             self.transport.write(handshake_pkt.__serialize__())
             print("client already sent")
             #self.handshake_timeout_task = self.loop.create_task(self.handshake_timeout_check())
@@ -153,8 +177,13 @@ class CRAP(StackingProtocol):
     def data_received(self, buffer):
         print("received data!@!")
         self.deserializer.update(buffer)
-        for pkt in self.deserializer.nextPackets():
-            self.handshake_pkt_recv(pkt)
+        for packet in self.deserializer.nextPackets():
+            if isinstance(packet, HandshakePacket) and self.handshake:
+                self.handshake_pkt_recv(packet)
+            elif isinstance(packet, DataPacket) and not self.handshake:
+                self.data_pkt_recv(packet)
+            elif isinstance(packet, ErrorPacket):
+                print ("ERROR: Wrong packet!!!!!")
 
 
     def handshake_pkt_recv(self, pkt):
@@ -167,7 +196,12 @@ class CRAP(StackingProtocol):
                 print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
                 # We need to transfer bytes in to object
                 print("get packet")
+
+                #get certificate
+                rootcert = x509.load_pem_x509_certificate(loadFile(RootcertPath), default_backend())
+                team4cert = x509.load_pem_x509_certificate(loadFile(Team4CertPath), default_backend())
                 Acert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
+
                 spublic_keyA = Acert.public_key()
                 print("Server get cert from client:")
                 print(Acert)
@@ -186,31 +220,48 @@ class CRAP(StackingProtocol):
                     self.transport.write(handshake_pkt.__serialize__())
                     self.transport.close()
 
+                #-----------------------------------------verify transported cert
+                for certdata in pkt.certChain:
+                    cert = x509.load_pem_x509_certificate(certdata, default_backend())
+                    try:
+                        print("Begin verify certificate in cert chain")
+                        cert.public_key().verify(Acert.signature, Acert.tbs_certificate_bytes, 
+                            padding.PKCS1v15(), Acert.signature_hash_algorithm)
+                        print("Verify certificate in certChain success!!!!!!!!!!")
+                    except Exception as error:
+                        logger.debug("Wrong certificate from client!!!!!!!")
+                        handshake_pkt = HandshakePacket(status=2)
+                        self.transport.write(handshake_pkt.__serialize__())
+                        self.transport.close()
+                
                 self.privatekB = ec.generate_private_key(ec.SECP384R1(), default_backend())
                 self.pk = self.privatekB.public_key()
 
                 self.l_private_keyB = rsa.generate_private_key(public_exponent=65537,key_size=2048,
                     backend=default_backend())
                 self.l_public_keyB = self.l_private_keyB.public_key()
+
+                self.t4privatek = serialization.load_pem_private_key(loadFile(Team4PrivateKeyPath),password=b'passphrase',backend=default_backend())
                 subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
                     x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
                     x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
                     x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
-                    x509.NameAttribute(NameOID.COMMON_NAME, u"mysite.com"),])
+                    x509.NameAttribute(NameOID.COMMON_NAME, u"20194.4.0.26"),])   #This common name has also been changed
                 certB = x509.CertificateBuilder().subject_name(subject).issuer_name(
                     issuer).public_key(
                         self.l_public_keyB).serial_number(x509.random_serial_number()
                             ).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
-                                x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),critical=False,).sign(self.l_private_keyB, hashes.SHA256(), default_backend())
+                                x509.SubjectAlternativeName([x509.DNSName(u"20194.4.0.26")]),critical=False,).sign(self.t4privatek, hashes.SHA256(), default_backend())
                 certB_bytes = certB.public_bytes(Encoding.PEM)
 
-                self.nonceB = random.randrange(0, 2**10) #os.urandom(32)
+                self.nonceB = random.randrange(0, 2**10)    #os.urandom(32)
                 nonceSignatureB = self.l_private_keyB.sign(
                     str(pkt.nonce).encode('ASCII'),
                     padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                     salt_length=padding.PSS.MAX_LENGTH),hashes.SHA256()
                 )
 
+                self.certChain = [loadFile(Team4CertPath)]
                 self.pk_bytes = self.pk.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
                 self.signature = self.l_private_keyB.sign(
                     self.pk_bytes,
@@ -220,7 +271,7 @@ class CRAP(StackingProtocol):
                 self.cert = certB_bytes
                 handshake_pkt = HandshakePacket(pk = self.pk_bytes, status = 1, nonce = self.nonceB, 
                     nonceSignature=nonceSignatureB,
-                    signature = self.signature, cert = self.cert)    # This is peer2 first get packet
+                    signature = self.signature, cert = self.cert, certChain = self.certChain)    # This is peer2 first get packet
                 self.transport.write(handshake_pkt.__serialize__())
 
                 # publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
@@ -249,6 +300,8 @@ class CRAP(StackingProtocol):
             #peer1 or peer2 has sent his public key and try to first verify cert and second calculate the shared key
             #There are some codes about verify the cert 
             if pkt.status == 1:     #peer1 first get the public key from peer2
+
+                
                 Bcert = x509.load_pem_x509_certificate(pkt.cert, default_backend())
                 spublic_keyB = Bcert.public_key()
                 try:
@@ -266,7 +319,20 @@ class CRAP(StackingProtocol):
                     logger.debug("Sever verify failed because wrong signature")
                     handshake_pkt = HandshakePacket(status=2)
                     self.transport.write(handshake_pkt.__serialize__())
-                    self.transport.close()               
+                    self.transport.close()     
+
+                for certdata in pkt.certChain:
+                    cert = x509.load_pem_x509_certificate(certdata, default_backend())
+                    try:
+                        print("Begin verify certificate in cert chain")
+                        cert.public_key().verify(Bcert.signature, Bcert.tbs_certificate_bytes, 
+                            padding.PKCS1v15(), Bcert.signature_hash_algorithm)
+                        print("Verify certificate in certChain success!!!!!!!!!!")
+                    except Exception as error:
+                        logger.debug("Wrong certificate from server!!!!!!!")
+                        handshake_pkt = HandshakePacket(status=2)
+                        self.transport.write(handshake_pkt.__serialize__())
+                        self.transport.close()          
                 print("begin to send next packe")
                 # publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 # print("publickeyB:", publickeyB)
