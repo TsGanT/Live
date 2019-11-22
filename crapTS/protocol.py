@@ -34,9 +34,9 @@ import datetime
 logger = logging.getLogger("playground.__connector__." + __name__)
 
 #-------------------------------------------------------------------try to get root cert
-RootcertPath = "~/.playground/connectors/crapTS/20194_root.cert"
-Team4CertPath = "~/.playground/connectors/crapTS/csr_team4_signed.cert"
-Team4PrivateKeyPath = "~/.playground/connectors/crapTS/key_team4.pem"
+RootcertPath = "/home/student_20194/.playground/connectors/crapTS/20194_root.cert"
+Team4CertPath = "/home/student_20194/.playground/connectors/crapTS/csr_team4_signed.cert"
+Team4PrivateKeyPath = "/home/student_20194/.playground/connectors/crapTS/key_team4.pem"
 
 def loadFile(path):
     with open(path, "r") as key_file:
@@ -158,11 +158,10 @@ class CRAP(StackingProtocol):
             #This cert is nothing
             print("client's self.pk_bytes")
             print("client's self.signature")
+            self.certChain = [loadFile(Team4CertPath)]
             handshake_pkt = HandshakePacket(status = 0, nonce = self.nonceA, pk = self.pk_bytes, 
                 signature = self.signature, cert = certA_bytes, certChain = self.certChain)
             print("client packet already generate a packet")
-
-            self.certChain = [loadFile(Team4CertPath)]
 
             self.transport.write(handshake_pkt.__serialize__())
             print("client already sent")
@@ -178,9 +177,9 @@ class CRAP(StackingProtocol):
         print("received data!@!")
         self.deserializer.update(buffer)
         for packet in self.deserializer.nextPackets():
-            if isinstance(packet, HandshakePacket) and self.handshake:
+            if isinstance(packet, HandshakePacket):
                 self.handshake_pkt_recv(packet)
-            elif isinstance(packet, DataPacket) and not self.handshake:
+            elif isinstance(packet, DataPacket):
                 self.data_pkt_recv(packet)
             elif isinstance(packet, ErrorPacket):
                 print ("ERROR: Wrong packet!!!!!")
@@ -221,18 +220,18 @@ class CRAP(StackingProtocol):
                     self.transport.close()
 
                 #-----------------------------------------verify transported cert
-                for certdata in pkt.certChain:
-                    cert = x509.load_pem_x509_certificate(certdata, default_backend())
-                    print("Begin verify certificate in cert chain")
-                    team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
-                    receive_address = Acert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
-                    if team_address == receive_address:
-                        pass
-                    else:
-                        logger.debug("Invalid certificate from server!!!!!!!")
-                        handshake_pkt = HandshakePacket(status=2)
-                        self.transport.write(handshake_pkt.__serialize__())
-                        self.transport.close()
+                #for certdata in pkt.certChain:
+                    #cert = x509.load_pem_x509_certificate(certdata, default_backend())
+                    #print("Begin verify certificate in cert chain")
+                    #team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    #receive_address = Acert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    #if team_address == receive_address:
+                     #   pass
+                    #else:
+                        #logger.debug("Invalid certificate from server!!!!!!!")
+                        #handshake_pkt = HandshakePacket(status=2)
+                        #self.transport.write(handshake_pkt.__serialize__())
+                        #self.transport.close()
                 
                 self.privatekB = ec.generate_private_key(ec.SECP384R1(), default_backend())
                 self.pk = self.privatekB.public_key()
@@ -280,6 +279,7 @@ class CRAP(StackingProtocol):
             elif pkt.status == 1:
                 try:
                     print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+                
                     spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
                         padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
                         hashes.SHA256())
@@ -321,18 +321,18 @@ class CRAP(StackingProtocol):
                     self.transport.write(handshake_pkt.__serialize__())
                     self.transport.close()     
 
-                for certdata in pkt.certChain:
-                    cert = x509.load_pem_x509_certificate(certdata, default_backend())
-                    print("Begin verify certificate in cert chain")
-                    team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
-                    receive_address = Bcert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
-                    if team_address == receive_address:
-                        pass
-                    else:
-                        logger.debug("Invalid certificate from server!!!!!!!")
-                        handshake_pkt = HandshakePacket(status=2)
-                        self.transport.write(handshake_pkt.__serialize__())
-                        self.transport.close()
+                #for certdata in pkt.certChain:
+                    #cert = x509.load_pem_x509_certificate(certdata, default_backend())
+                    #print("Begin verify certificate in cert chain")
+                    #team_address = cert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    #receive_address = Bcert.subject.get_attributes_for_aid(NameOID.COMMON_NAME)[0].value
+                    #if team_address == receive_address:
+                      #  pass
+                    #else:
+                        #logger.debug("Invalid certificate from server!!!!!!!")
+                        #handshake_pkt = HandshakePacket(status=2)
+                        #self.transport.write(handshake_pkt.__serialize__())
+                        #self.transport.close()
           
                     
                 print("begin to send next packe")
