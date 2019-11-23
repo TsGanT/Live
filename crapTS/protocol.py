@@ -185,6 +185,7 @@ class CRAP(StackingProtocol):
             if isinstance(packet, HandshakePacket):
                 self.handshake_pkt_recv(packet)
             elif isinstance(packet, DataPacket):
+                print(DataPacket)
                 self.data_pkt_recv(packet)
             elif isinstance(packet, ErrorPacket):
                 print ("ERROR: Wrong packet!!!!!")
