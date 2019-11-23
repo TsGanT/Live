@@ -73,13 +73,6 @@ class DataPacket(CrapPacketType):
         ("data", BUFFER),
     ]
 
-class ErrorPacket(CrapPacketType):
-    DEFINITION_IDENTIFIER = "crap.errorpacket”"
-    DEFINITION_VERSION = "1.0"
-    FIELDS = [
-        ("message", STRING),
-    ]
-
 class ErrorHandleClass():
     def handleException(self, e):
         print(e)
@@ -185,10 +178,8 @@ class CRAP(StackingProtocol):
             if isinstance(packet, HandshakePacket):
                 self.handshake_pkt_recv(packet)
             elif isinstance(packet, DataPacket):
-                print(DataPacket)
+                print(packet)
                 self.data_pkt_recv(packet)
-            elif isinstance(packet, ErrorPacket):
-                print ("ERROR: Wrong packet!!!!!")
 
 
     def handshake_pkt_recv(self, pkt):
