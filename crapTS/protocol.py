@@ -393,6 +393,7 @@ class CRAP(StackingProtocol):
                 digestA3.update(hashA2)
                 hashA3 = digestA3.finalize()
                 self.dekey_A = hashA3[0:16]
+                print("Hash value calculate success!")
                 self.higherProtocol().connection_made(self.higher_transport)
 
 
@@ -421,14 +422,20 @@ class CRAP(StackingProtocol):
     def data_pkt_recv(self, pkt):
         if self.mode == "client":
             aesgcm = AESGCM(self.dekey_A)
-            use_data = aesgcm.decrypt(self.ivB, pkt.data, None)
-            print("Client recive data succes!!!!!!!!!!!")
+            try:
+                use_data = aesgcm.decrypt(self.ivB, pkt.data, None)
+                print("Client recive data succes!!!!!!!!!!!")
+            except Exception as error:
+                logger.debug("Client Decryption failed")
             self.ivB = (int.from_bytes(self.ivB, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
             self.higherProtocol().data_received(use_data)
         elif self.mode == "server":
             aesgcm = AESGCM(self.dekey_B)
-            use_data = aesgcm.decrypt(self.ivA, pkt.data, None)
-            print("Server recive data succes!!!!!!!!!!!")
+            try:
+                use_data = aesgcm.decrypt(self.ivA, pkt.data, None)
+                print("Server recive data succes!!!!!!!!!!!")
+            except Exception as error:
+                logger.debug("Server Decryption failed")
             self.ivA = (int.from_bytes(self.ivA, byteorder = "big") + 1).to_bytes(12, byteorder = "big")
             self.higherProtocol().data_received(use_data)
     
