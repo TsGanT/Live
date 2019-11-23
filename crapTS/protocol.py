@@ -305,20 +305,16 @@ class CRAP(StackingProtocol):
                 hashB1 = digestB.finalize()
                 self.ivA = hashB1[0:12]
                 self.ivB = hashB1[12:23]
-                print("Server iva:", self.ivA)
-                print("Server ivb:", self.ivB)
 
                 digestB2 = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 digestB2.update(hashB1)
                 hashB2 = digestB2.finalize()
-                self.enkey_B = hashB2[0:16]
-                print("enkey_B: ", self.enkey_B)
+                self.dekey_B = hashB2[0:16]
 
                 digestB3 = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 digestB3.update(hashB2)
                 hashB3 = digestB3.finalize()
-                self.dekey_B = hashB3[0:16]
-                print("dekey_B", self.dekey_B)
+                self.enkey_B = hashB3[0:16]
 
                 print("Hash value for server success!!")
                 self.higherProtocol().connection_made(self.higher_transport)
@@ -387,15 +383,12 @@ class CRAP(StackingProtocol):
                 hashA1 = digestA.finalize()
                 self.ivA = hashA1[0:12]
                 self.ivB = hashA1[12:23]
-                print("client iva:", self.ivA)
-                print("client ivb:", self.ivB)
                 
 
                 digestA2 = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 digestA2.update(hashA1)
                 hashA2 = digestA2.finalize()
                 self.enkey_A = hashA2[0:16]
-                print("client enc:", self.enkey_A)
 
                 digestA3 = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 digestA3.update(hashA2)
