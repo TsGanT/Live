@@ -35,6 +35,8 @@ publickRoot = x509.load_pem_x509_certificate(Rootcert, default_backend()).public
 Cteam4 = x509.load_pem_x509_certificate(Team4Cert, default_backend())
 print(Cteam4.subject, type(Cteam4.subject))
 
+callback = print
+
 #pk_bytes = publickCert.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)# commaon name -> issuer name   prefix
 
 # plaintext = private_key.decrypt(

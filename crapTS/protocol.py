@@ -315,6 +315,9 @@ class CRAP(StackingProtocol):
                 digestB3.update(hashB2)
                 hashB3 = digestB3.finalize()
                 self.dekey_B = hashB3[0:16]
+
+                print("Hash value for server success!!")
+                self.higherProtocol().connection_made(self.higher_transport)
                 
             else:
                     #ERROR: This is peer2 and the first time the status cannot be 1 or 2
@@ -390,6 +393,8 @@ class CRAP(StackingProtocol):
                 digestA3.update(hashA2)
                 hashA3 = digestA3.finalize()
                 self.dekey_A = hashA3[0:16]
+                self.higherProtocol().connection_made(self.higher_transport)
+
 
             else:
                 self.handshake_send_error()
