@@ -240,7 +240,9 @@ class CRAP(StackingProtocol):
                 
                 self.privatekB = ec.generate_private_key(ec.SECP384R1(), default_backend())
                 self.pk = self.privatekB.public_key()
-
+                recv_pubk = load_pem_public_key(pkt.pk, backend=default_backend())
+                self.server_shared_key = self.privatekB.exchange(ec.ECDH(), recv_pubk)
+                print("Calculate the server_shared_key success!!!")
                 self.l_private_keyB = rsa.generate_private_key(public_exponent=65537,key_size=2048,
                     backend=default_backend())
                 self.l_public_keyB = self.l_private_keyB.public_key()
@@ -278,16 +280,16 @@ class CRAP(StackingProtocol):
                     signature = self.signature, cert = self.cert, certChain = self.certChain)    # This is peer2 first get packet
                 self.transport.write(handshake_pkt.__serialize__())
 
-                # publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
-                # server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
-                # print("Calculate the server_shared_key success!!!")
+                #publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
+                #self.server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
+                #print("Calculate the server_shared_key success!!!")
             elif pkt.status == 1:
                 try:
                     print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-                
-                    spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
-                        padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
-                        hashes.SHA256())
+                    print(pkt.nonceSignature) 
+                    #spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
+                    #    padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
+                    #    hashes.SHA256())
                     print("Server verify nonceB success!!!!!")
                 except Exception as error:
                     logger.debug("Sever verify failed because wrong signature")
@@ -296,14 +298,10 @@ class CRAP(StackingProtocol):
                     self.transport.close()
                 print("------------------------------Handshake complete---------------------------------")
 
-                publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
-                server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
-                print("Calculate the server_shared_key success!!!")
 
                 #-------------------------------------------------try to generate hash and get ivA, ivB, enkB, deKB
-                server_shared_key_bytes = server_shared_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
                 digestB = hashes.Hash(hashes.SHA256(), backend=default_backend())
-                digestB.update(server_shared_key_bytes)
+                digestB.update(self.server_shared_key)
                 hashB1 = digestB.finalize()
                 self.ivA = hashB1[0:12]
                 self.ivB = hashB1[12:23]
@@ -370,15 +368,15 @@ class CRAP(StackingProtocol):
                 handshake_pkt = HandshakePacket(status=1, nonceSignature=nonceSignatureA)
                 print("-------------send packet second time!!!------------------")
                 self.transport.write(handshake_pkt.__serialize__())
+                print("-------------------calculate hash------------------------")
 
                 #-------------------------------------------------try to generate hash and get ivA, ivB, enkA, deKA
                 publickeyB = load_pem_public_key(pkt.pk, backend=default_backend())
                 print("publickeyB:", publickeyB)
-                client_shared_key = self.privatekA.exchange(ec.ECDH, publickeyB)
-                client_shared_key_bytes = client_shared_key.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
-                print("client_shared_key:", client_shared_key)
+                client_shared_key = self.privatekA.exchange(ec.ECDH(), publickeyB)
+                print("shard_key_client:", client_shared_key)
                 digestA = hashes.Hash(hashes.SHA256(), backend=default_backend())
-                digestA.update(client_shared_key_bytes)
+                digestA.update(client_shared_key)
                 hashA1 = digestA.finalize()
                 self.ivA = hashA1[0:12]
                 self.ivB = hashA1[12:23]
