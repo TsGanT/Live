@@ -74,7 +74,7 @@ class DataPacket(CrapPacketType):
     ]
 
 class ErrorPacket(CrapPacketType):
-    DEFINITION_IDENTIFIER = "crap.errorpacket”"
+    DEFINITION_IDENTIFIER = "crap.errorpacket"
     DEFINITION_VERSION = "1.0"
     FIELDS = [
         ("message", STRING),
@@ -104,7 +104,7 @@ class CRAP(StackingProtocol):
         self.cert = None
         self.certChain = None
         self.higher_transport = None
-        self.deserializer = CrapPacketType.Deserializer(errHandler=ErrorHandleClass())
+        self.deserializer = CrapPacketType.Deserializer()
 
     def connection_made(self, transport):
         logger.debug("{} CRAP: connection made".format(self.mode))
@@ -179,17 +179,21 @@ class CRAP(StackingProtocol):
         return
     
     def data_received(self, buffer):
-        print("received data!@!")
         self.deserializer.update(buffer)
         for packet in self.deserializer.nextPackets():
-            if isinstance(packet, HandshakePacket):
+            if isinstance(packet, ErrorPacket):
+                print("123123124124112")
+                print(packet.message)
+            elif packet.DEFINITION_IDENTIFIER == "crap.handshakepacket":
                 self.handshake_pkt_recv(packet)
-            elif isinstance(packet, DataPacket):
-                print(DataPacket)
+            elif packet.DEFINITION_IDENTIFIER == "crap.datapacket":
+                print("begin data packet")
                 self.data_pkt_recv(packet)
-            elif isinstance(packet, ErrorPacket):
-                print ("ERROR: Wrong packet!!!!!")
-
+            elif packet.DEFINITION_IDENTIFIER == "crap.errorpacket":
+                print("receive error message!!!!!!!")
+                print(packet.message)
+            else:
+                print("unknown packet!")
 
     def handshake_pkt_recv(self, pkt):
         print("first recive a data")
@@ -249,16 +253,13 @@ class CRAP(StackingProtocol):
                 self.l_public_keyB = self.l_private_keyB.public_key()
 
                 self.t4privatek = serialization.load_pem_private_key(loadFile(Team4PrivateKeyPath),password=b'passphrase',backend=default_backend())
-                subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+                subject = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
                     x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
                     x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
                     x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
-                    x509.NameAttribute(NameOID.COMMON_NAME, u"20194.4.0.26"),])   #This common name has also been changed
-                certB = x509.CertificateBuilder().subject_name(subject).issuer_name(
-                    issuer).public_key(
-                        self.l_public_keyB).serial_number(x509.random_serial_number()
-                            ).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
-                                x509.SubjectAlternativeName([x509.DNSName(u"20194.4.0.26")]),critical=False,).sign(self.t4privatek, hashes.SHA256(), default_backend())
+                    x509.NameAttribute(NameOID.COMMON_NAME, u"20194.4.4.4"),])   #This common name has also been changed
+                certB = x509.CertificateBuilder().subject_name(subject).issuer_name(team4cert.subject).public_key(self.l_public_keyB).serial_number(x509.random_serial_number()).not_valid_before(datetime.datetime.utcnow()).not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=10)).add_extension(
+                                x509.SubjectAlternativeName([x509.DNSName(u"20194.4.4.4")]),critical=False,).sign(self.t4privatek, hashes.SHA256(), default_backend())
                 certB_bytes = certB.public_bytes(Encoding.PEM)
 
                 self.nonceB = random.randrange(0, 2**10)    #os.urandom(32)
@@ -280,18 +281,19 @@ class CRAP(StackingProtocol):
                     nonceSignature=nonceSignatureB,
                     signature = self.signature, cert = self.cert, certChain = self.certChain)    # This is peer2 first get packet
                 self.transport.write(handshake_pkt.__serialize__())
-
+                print("server send packet success!!")
                 #publickeyA = load_pem_public_key(pkt.pk, backend=default_backend())
                 #self.server_shared_key = self.privatekB.exchange(ec.ECDH, publickeyA)#Alreday calcualte
                 #print("Calculate the server_shared_key success!!!")
             elif pkt.status == 1:
+                print("***********************************************")
                 try:
                     print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
                     print(pkt.nonceSignature) 
                     #spublic_keyA.verify(pkt.nonceSignature, str(self.nonceB).encode('ASCII'),
-                    #    padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
-                    #    hashes.SHA256())
-                    print("Server verify nonceB success!!!!!")
+                     #   padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS.MAX_LENGTH),
+                      #  hashes.SHA256())
+                    #print("Server verify nonceB success!!!!!")
                 except Exception as error:
                     logger.debug("Sever verify failed because wrong signature")
                     handshake_pkt = HandshakePacket(status=2)
@@ -305,7 +307,7 @@ class CRAP(StackingProtocol):
                 digestB.update(self.server_shared_key)
                 hashB1 = digestB.finalize()
                 self.ivA = hashB1[0:12]
-                self.ivB = hashB1[12:23]
+                self.ivB = hashB1[12:24]
 
                 digestB2 = hashes.Hash(hashes.SHA256(), backend=default_backend())
                 digestB2.update(hashB1)
@@ -316,7 +318,9 @@ class CRAP(StackingProtocol):
                 digestB3.update(hashB2)
                 hashB3 = digestB3.finalize()
                 self.enkey_B = hashB3[0:16]
-
+                print("ivB:{}".format(self.ivB.hex()))
+                print("decryp key_B{}".format(self.dekey_B.hex()))
+                print("encryp key_B{}".format(self.enkey_B.hex()))
                 print("Hash value for server success!!")
                 self.higherProtocol().connection_made(self.higher_transport)
                 
